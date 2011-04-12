@@ -566,15 +566,10 @@ sub zMapZMapDefaults {
 
     return $self->formatZmapDefaults(
         'ZMap',
-        ( $ENV{OTTERLACE_CHROMOSOME_COORDINATES}
-          ? (
-              'csname'            => $slice->csname,
-              'csver'             => $slice->csver,
-              'start'             => $slice->start,
-              'end'               => $slice->end,
-          )
-          : ( )
-        ),
+        'csname'            => $slice->csname,
+        'csver'             => $slice->csver,
+        'start'             => $slice->start,
+        'end'               => $slice->end,
         'sources'           => $sources_string,
         'show-mainwindow'   => ( $show_mainwindow ? 'true' : 'false' ),
         'cookie-jar'        => $ENV{'OTTERLACE_COOKIE_JAR'},
@@ -1033,15 +1028,24 @@ sub zMapFeaturesLoaded {
     
     my $filter_hash = $self->AceDatabase->filters;
     my $state_changed = 0;
+
+    # We used to get featureset names back from zmap in lower case so that we
+    # had to do a case insensitive search through the filter names for a
+    # match. Starting with Zmap 0.1.114 (or maybe earlier) we get them in
+    # their original case. But then I discovered that replies from
+    # load_features requests come back in lower case, so I put case
+    # insensitivity code back.  Can remove when zmap fixed (RT #211672).
+
+    my %case_insensitive_filter_hash;
+    while (my ($name, $entry) = each %$filter_hash) {
+        $case_insensitive_filter_hash{   $name} = $entry;
+        $case_insensitive_filter_hash{lc $name} = $entry;
+    }
+    
     foreach my $set_name (@featuresets) {
-
-        # We used to get featureset names back from zmap in lower case so that
-        # we had to do a case insensitive search through the filter names for a
-        # match. Starting with Zmap 0.1.114 (or maybe earlier) we get them in
-        # their original case.
-
         # NB: careful not to auto-vivify entries in $filter_hash !
-        if (my $filter_entry = $filter_hash->{$set_name}) {
+        # if (my $filter_entry = $filter_hash->{$set_name}) {
+        if (my $filter_entry = $case_insensitive_filter_hash{$set_name}) {
             my $state_hash = $filter_entry->{'state'};
             if ($status == 0 && ! $state_hash->{'failed'}) {
                 $state_changed = 1;
@@ -1052,7 +1056,7 @@ sub zMapFeaturesLoaded {
                 $state_changed = 1;
                 $state_hash->{'done'} = 1;
                 $state_hash->{'failed'} = 0; # reset failed flag if filter succeeds
-                my $filter = $filter_hash->{$set_name}{'filter'};
+                my $filter = $filter_entry->{'filter'};
                 if ($filter->process_gff_file) {
                     my @tsct = $self->AceDatabase->process_gff_file_from_Filter($filter);
                     if (@tsct) {
@@ -1353,11 +1357,10 @@ sub _zmap_new_view_xml {
     my ($self, $config) = @_;
 
     my $slice = $self->AceDatabase->smart_slice;
-    my $on_chromosome = $ENV{OTTERLACE_CHROMOSOME_COORDINATES};
 
-    my $segment = $on_chromosome ? $slice->ssname : $slice->name;
-    my $start   = $on_chromosome ? $slice->start  : 1;
-    my $end     = $on_chromosome ? $slice->end    : 0;
+    my $segment = $slice->ssname;
+    my $start   = $slice->start;
+    my $end     = $slice->end;
 
     my @fields = ( $segment, $start, $end, $config );
     my @xml_escaped_fields = map { xml_escape($_) } @fields;

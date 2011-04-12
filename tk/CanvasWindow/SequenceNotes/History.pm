@@ -159,12 +159,9 @@ sub initialise {
         $comment->bind(ref($comment), '<Control-h>', '');
         $comment->bind(ref($comment), '<Control-H>', '');
 
-        $comment->bind('<Return>', sub { $self->update_db_comment })
-          ;    #update_sequence_notes($comment)});
+        $comment->bind('<Return>', sub { $self->update_db_comment });
         my $update_comment = sub {
             $self->update_db_comment;
-
-            #update_sequence_notes($comment);
         };
         $set_note =
           $self->make_button($button_frame, 'Set note', $update_comment, 0);

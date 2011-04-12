@@ -62,7 +62,8 @@ sub get_CloneSequence_list {
     if ($force_update || !$cs_list ) {
 
         my $ds = $self->SequenceSetChooser->DataSet;
-        $cs_list = $ds->fetch_all_CloneSequences_for_SequenceSet($ss, 1);
+        $cs_list = $ds->fetch_all_CloneSequences_for_SequenceSet($ss);
+        $ds->fetch_notes_locks_status_for_SequenceSet($ss);
     }
     return $cs_list;
 }

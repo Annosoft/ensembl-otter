@@ -304,7 +304,7 @@ sub load_filters {
     if ($self->XaceSeqChooser) {
         if (@to_fetch) {
             my @featuresets = 
-                map { @{$_->{filter}->featuresets} } @to_fetch;
+                map { $_->{filter}->name } @to_fetch;
             $self->XaceSeqChooser->zMapLoadFeatures(@featuresets);
         }
         else {

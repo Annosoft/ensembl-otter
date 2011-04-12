@@ -2,10 +2,6 @@
 
 use warnings;
 
-#!/nfs/humace2/hum/bin/perl
-
-use warnings;
-
 
 use lib '/nfs/team71/analysis/jgrg/work/tk';
 
@@ -16,10 +12,9 @@ use MenuCanvasWindow::XaceSeqChooser;
 use Ace;
 use Getopt::Long 'GetOptions';
 use Socket;
-use vars '@command_line';
 
 {
-    @command_line = ($0, @ARGV);
+    my @command_line = ($0, @ARGV);
     my ($cript) = $0 =~ m{([^/]+)$};
     my $font_size = 0;
     my($host, $port, $path, $title);
