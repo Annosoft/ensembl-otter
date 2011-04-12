@@ -11,55 +11,48 @@ use SangerPaths qw{ core bioperl123 ensembl61 otter54 };
 
 use Bio::Otter::ServerScriptSupport;
 
-sub get_sequence_notes {
-    my ($server) = @_;
-
-my $asm_type = $server->param('type');
-my $aut_name = $server->param('author');
-my $ctg_name = $server->param('contig');
-
-my $sql = qq{
+my $select_sequence_notes_sql = <<'SQL'
     SELECT ctg.name,
            aut.author_name,
            sn.is_current,
            sn.note_time,
            UNIX_TIMESTAMP(sn.note_time) as ts,
            sn.note
-      FROM }
-.($asm_type ? qq{ assembly asm, seq_region chr,} : '' )
-.qq{
+      FROM assembly asm, seq_region chr,
            seq_region ctg,
            sequence_note sn,
            author aut
-     WHERE }
-.($ctg_name ? qq{ ctg.name = "$ctg_name" AND } : '' )
-.($asm_type ? qq{ chr.name = "$asm_type" AND
-                  asm.asm_seq_region_id = chr.seq_region_id AND
-                  asm.cmp_seq_region_id = ctg.seq_region_id AND } : '' )
-.qq{       sn.seq_region_id = ctg.seq_region_id }
-.($aut_name ? qq{ AND aut.author_name = "$aut_name" } : '')
-.qq{   AND sn.author_id = aut.author_id
+     WHERE chr.name = ?
+       AND asm.asm_seq_region_id = chr.seq_region_id
+       AND asm.cmp_seq_region_id = ctg.seq_region_id
+       AND sn.seq_region_id = ctg.seq_region_id 
+       AND sn.author_id = aut.author_id
   GROUP BY ctg.name,
            aut.author_name,
            sn.is_current,
            sn.note_time,
            sn.note
   ORDER BY ctg.name, sn.note_time ASC
-};
+SQL
+    ;
 
-my $sth = $server->otter_dba()->dbc()->prepare($sql);
-$sth->execute();
+sub get_sequence_notes {
+    my ($server) = @_;
 
-my $output_string = '';
-while (my ($ctg_name, $author_name, $is_current, $note_time, $timestamp, $note) = $sth->fetchrow()) {
-    $note=~s/\n/\ /g;
-    if($is_current=~/^(.)/) {
-        $is_current = uc($1);
+    my $asm_type = $server->require_argument('type');
+    my $sth = $server->otter_dba()->dbc()->prepare($select_sequence_notes_sql);
+    $sth->execute($asm_type);
+
+    my $output_string = '';
+    while (my ($ctg_name, $author_name, $is_current, $note_time, $timestamp, $note) = $sth->fetchrow()) {
+        $note=~s/\n/\ /g;
+        if($is_current=~/^(.)/) {
+            $is_current = uc($1);
+        }
+        $output_string .= join("\t", $ctg_name, $author_name, $is_current, $note_time, $timestamp, $note)."\n";
     }
-    $output_string .= join("\t", $ctg_name, $author_name, $is_current, $note_time, $timestamp, $note)."\n";
-}
 
-return $server->otter_wrap_response($output_string);
+    return $server->otter_wrap_response($output_string);
 }
 
 Bio::Otter::ServerScriptSupport->send_response(\&get_sequence_notes);

@@ -862,7 +862,6 @@ sub _sequence_note_action {
             'dataset'   => $dsname,
             'action'    => $action,
             'contig'    => $contig_name,
-            'email'     => $self->email(),
             'timestamp' => $seq_note->timestamp(),
             'text'      => $seq_note->text(),
         },
@@ -1128,7 +1127,6 @@ sub save_otter_xml {
         'POST',
         'write_region',
         {
-            'email'    => $self->email,
             'dataset'  => $dsname,
             'data'     => $xml,
         }
@@ -1146,7 +1144,6 @@ sub unlock_otter_xml {
         'POST',
         'unlock_region',
         {
-            'email'    => $self->email,
             'dataset'  => $dsname,
             'data'     => $xml,
         }

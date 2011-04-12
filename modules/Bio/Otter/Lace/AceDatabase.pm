@@ -295,14 +295,26 @@ sub recover_smart_slice_from_region_xml_file {
     return;
 }
 
-
 sub smart_slice {
     my( $self, $smart_slice ) = @_;
     
     if ($smart_slice) {
+        $self->{'_offset'} = undef;
         $self->{'_smart_slice'} = $smart_slice;
     }
     return $self->{'_smart_slice'};
+}
+
+sub offset {
+    my ($self) = @_;
+    
+    my $offset = $self->{'_offset'};
+    unless (defined $offset) {
+        my $slice = $self->smart_slice
+            or confess "No smart_slice (Bio::Otter::Lace::Slice) attached";
+        $offset = $self->{'_offset'} = $slice->start - 1;
+    }
+    return $offset;
 }
 
 sub save_ace_to_otter {
@@ -572,20 +584,29 @@ sub reload_filter_state {
 
     my $filters = $self->filters;
 
+    my @obsolete;
     while (my ($filter_name, $wanted, $failed, $done) = $sth->fetchrow) {
         my $filter = $filters->{$filter_name};
         if ($filter) {
             print STDERR "Reloading state from file for $filter_name\n";
         } else {
             print STDERR "Skipping obsolete coloumn '$filter_name'\n";
-            my $del = $dbh->prepare(q{ DELETE FROM otter_filter WHERE filter_name = ? });
-            $del->execute($filter_name);
+            push(@obsolete, $filter_name);
             next;
         }
         my $state_hash = $filters->{$filter_name}{'state'};
         $state_hash->{'wanted'} = $wanted;
         $state_hash->{'failed'} = $failed;
         $state_hash->{'done'}   = $done;
+    }
+    
+    if (@obsolete) {
+        $dbh->begin_work;
+        my $del = $dbh->prepare(q{ DELETE FROM otter_filter WHERE filter_name = ? });
+        foreach my $filter_name (@obsolete) {
+            $del->execute($filter_name);
+        }
+        $dbh->commit;
     }
 
     return;
@@ -595,6 +616,8 @@ sub save_filter_state {
     my ($self) = @_;
 
     my $dbh = $self->DB->dbh;
+    $dbh->begin_work;
+
     my $insert = $dbh->prepare(q{
         INSERT OR IGNORE INTO otter_filter (filter_name) VALUES (?)
     });
@@ -612,6 +635,7 @@ sub save_filter_state {
             $name, 
             );
     }
+    $dbh->commit;
 
     return;
 }
@@ -670,8 +694,11 @@ sub process_gff_file_from_Filter {
     elsif ($filter->feature_kind =~ /AlignFeature/) {
         Bio::Otter::Lace::ProcessGFF::store_hit_data_from_gff($self->DB->dbh, $full_gff_file);
         # Unset flag so that we don't reprocess this file if we recover the session.
-        my $no_reload = $self->DB->dbh->prepare(q{ UPDATE otter_filter SET process_gff = 0 WHERE filter_name = ? });
+        my $dbh = $self->DB->dbh;
+        $dbh->begin_work;
+        my $no_reload = $dbh->prepare(q{ UPDATE otter_filter SET process_gff = 0 WHERE filter_name = ? });
         $no_reload->execute($filter_name);
+        $dbh->commit;
         return;
     }
     else {

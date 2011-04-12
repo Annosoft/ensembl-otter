@@ -210,8 +210,8 @@ sub write_region {
         $output_xml = $formatter->generate_OtterXML;
     };
     if ($@) {
-        die "Failed writing annotations [$@]";
         $odba->rollback;
+        die "Failed writing annotations [$@]";
     } else {
         $odba->commit;
     }

@@ -149,7 +149,7 @@ sub featuresets {
 
     if ($featuresets) {
         $self->{_featuresets} =
-            ref $featuresets ? $featuresets : [split(/,/, $featuresets)];
+            ref $featuresets ? $featuresets : [split(/\s*[,;]\s*/, $featuresets)];
     }
     
     # the list of featuresets defaults to the name of this filter

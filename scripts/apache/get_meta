@@ -11,28 +11,28 @@ use SangerPaths qw{ core bioperl123 ensembl61 otter54 };
 
 use Bio::Otter::ServerScriptSupport;
 
-sub get_meta {
-    my $server = @_;
-
-my $sth = $server->otter_dba()->dbc()->prepare(qq{
+my $select_meta_sql = <<'SQL'
     SELECT meta_key, meta_value
       FROM meta
   ORDER BY meta_id
-});
-$sth->execute;
+SQL
+    ;
 
-my $counter = 0;
-my $output_string ='';
+sub get_meta {
+    my ($server) = @_;
 
-while (my ($meta_key, $meta_value) = $sth->fetchrow) {
+    my $sth = $server->otter_dba()->dbc()->prepare($select_meta_sql);
+    $sth->execute;
 
-    $meta_value=~s/\s+/ /g; # get rid of newlines and tabs
+    my $counter = 0;
+    my $output_string ='';
+    while (my ($meta_key, $meta_value) = $sth->fetchrow) {
+        $meta_value=~s/\s+/ /g; # get rid of newlines and tabs
+        $output_string .= join("\t", $meta_key, $meta_value)."\n";
+        $counter++;
+    }
 
-    $output_string .= join("\t", $meta_key, $meta_value)."\n";
-    $counter++;
-}
-
-warn "Total of $counter meta table pairs sent\n";
+    warn "Total of $counter meta table pairs sent\n";
 
     return $server->otter_wrap_response($output_string);
 }

@@ -11,6 +11,67 @@ use SangerPaths qw{ core bioperl123 ensembl61 otter54 };
 
 use Bio::Otter::ServerScriptSupport;
 
+my $select_mapping_sql = <<'SQL'
+
+    SELECT sub.name
+      , chr.name
+      , count(*) cnt
+      , group_concat(cln.name ORDER BY sub_ctg.asm_start SEPARATOR ',')
+      , sub_hdn.value
+    FROM seq_region sub
+      , assembly sub_ctg
+      , seq_region ctg
+      , assembly chr_ctg
+      , seq_region chr
+      , assembly cln_ctg
+      , seq_region cln
+      , seq_region_attrib sub_hdn
+    WHERE sub.coord_system_id = (SELECT coord_system_id
+                                 FROM coord_system
+                                 WHERE name = 'subregion')
+
+      AND sub_hdn.seq_region_id = sub.seq_region_id
+      AND sub_hdn.attrib_type_id = (SELECT attrib_type_id
+                                    FROM attrib_type
+                                    WHERE code = 'hidden')
+
+      AND sub.seq_region_id = sub_ctg.asm_seq_region_id
+      AND ctg.seq_region_id = sub_ctg.cmp_seq_region_id
+      AND ctg.coord_system_id = (SELECT coord_system_id
+                                 FROM coord_system
+                                 WHERE name = 'contig')
+
+      AND cln.seq_region_id = cln_ctg.asm_seq_region_id
+      AND ctg.seq_region_id = cln_ctg.cmp_seq_region_id
+      AND cln.coord_system_id = (SELECT coord_system_id
+                                 FROM coord_system
+                                 WHERE name = 'clone')
+
+      AND sub_ctg.cmp_seq_region_id = chr_ctg.cmp_seq_region_id
+      AND chr.seq_region_id = chr_ctg.asm_seq_region_id
+      AND (chr.coord_system_id = (SELECT coord_system_id
+                                  FROM coord_system
+                                  WHERE name = 'chromosome'
+                                    AND version = 'Otter')
+           OR chr.seq_region_id = sub.seq_region_id)
+
+    GROUP BY sub.name, chr.name
+    ORDER BY sub.name, cnt DESC
+SQL
+    ;
+
+my $select_access_sql = <<'SQL'
+    SELECT acc.access_type
+      FROM sequence_set_access acc,
+           seq_region sr,
+           author au
+     WHERE acc.seq_region_id = sr.seq_region_id
+       AND acc.author_id = au.author_id
+       AND au.author_name = ?
+       AND sr.name        = ?
+SQL
+    ;
+
 sub get_sequencesets {
     my ($server) = @_;
 
@@ -27,55 +88,8 @@ sub get_sequencesets {
     my $odba = $server->otter_dba();
 
         # mapping between subregions and chromosomes:
-    my $sql = qq{
 
-        SELECT sub.name
-          , chr.name
-          , count(*) cnt
-          , group_concat(cln.name ORDER BY sub_ctg.asm_start SEPARATOR ',')
-          , sub_hdn.value
-        FROM seq_region sub
-          , assembly sub_ctg
-          , seq_region ctg
-          , assembly chr_ctg
-          , seq_region chr
-          , assembly cln_ctg
-          , seq_region cln
-          , seq_region_attrib sub_hdn
-        WHERE sub.coord_system_id = (SELECT coord_system_id
-                                     FROM coord_system
-                                     WHERE name = 'subregion')
-
-          AND sub_hdn.seq_region_id = sub.seq_region_id
-          AND sub_hdn.attrib_type_id = (SELECT attrib_type_id
-                                        FROM attrib_type
-                                        WHERE code = 'hidden')
-
-          AND sub.seq_region_id = sub_ctg.asm_seq_region_id
-          AND ctg.seq_region_id = sub_ctg.cmp_seq_region_id
-          AND ctg.coord_system_id = (SELECT coord_system_id
-                                     FROM coord_system
-                                     WHERE name = 'contig')
-
-          AND cln.seq_region_id = cln_ctg.asm_seq_region_id
-          AND ctg.seq_region_id = cln_ctg.cmp_seq_region_id
-          AND cln.coord_system_id = (SELECT coord_system_id
-                                     FROM coord_system
-                                     WHERE name = 'clone')
-
-          AND sub_ctg.cmp_seq_region_id = chr_ctg.cmp_seq_region_id
-          AND chr.seq_region_id = chr_ctg.asm_seq_region_id
-          AND (chr.coord_system_id = (SELECT coord_system_id
-                                      FROM coord_system
-                                      WHERE name = 'chromosome'
-                                        AND version = 'Otter')
-               OR chr.seq_region_id = sub.seq_region_id)
-
-        GROUP BY sub.name, chr.name
-        ORDER BY sub.name, cnt DESC
-      };
-
-    my $sth = $odba->dbc()->prepare($sql);
+    my $sth = $odba->dbc()->prepare($select_mapping_sql);
     $sth->execute();
 
     my %sub_contig_count = ();
@@ -127,16 +141,7 @@ XML
 
         # An attempt at finer, by-author's-name control over visibility/writability of sequence sets
         #
-        my $sth=$odba->dbc()->prepare(q{
-            SELECT acc.access_type
-              FROM sequence_set_access acc,
-                   seq_region sr,
-                   author au
-             WHERE acc.seq_region_id = sr.seq_region_id
-               AND acc.author_id = au.author_id
-               AND au.author_name = ?
-               AND sr.name        = ?
-        });
+        my $sth=$odba->dbc()->prepare($select_access_sql);
         $sth->execute($author, $chr_name);
         if (my($access) = $sth->fetchrow) {  # we're only expecting max one value
                                              # due to schema restrictions

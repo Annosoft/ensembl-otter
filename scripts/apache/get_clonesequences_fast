@@ -24,7 +24,7 @@ unless ($server->local_user) {
     $server->authorized_user;
 }
 
-my $sql = q{
+my $sql = <<'SQL'
     SELECT cl.name
       , intl_clone_name.value
       , embl_acc.value
@@ -89,7 +89,8 @@ my $sql = q{
         FROM attrib_type
         WHERE code = 'embl_version')
     ORDER BY chr2ctg.asm_start
-    };
+SQL
+;
 
 # If a clone is missing from the results, check that it has embl_acc and embl_version attributes.
 # If the whole chromosome is missing, check that it has the chr attribute.

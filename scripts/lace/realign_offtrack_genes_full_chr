@@ -41,7 +41,7 @@ use Bio::Otter::Lace::Defaults;
         my @clSeqs = @{$cs_list}[@$range];
         my $start = $clSeqs[0]->accession();
         my $end   = $clSeqs[-1]->accession();
-        my $cmd   = qq`./realign_offtrack_genes $ds_chr -start_acc $start -end_acc $end > ${ds_chr_file}_${start}.out 2> ${ds_chr_file}_${start}.err`;
+        my $cmd   = qq(./realign_offtrack_genes $ds_chr -start_acc $start -end_acc $end > ${ds_chr_file}_${start}.out 2> ${ds_chr_file}_${start}.err);
         warn "running $cmd \n";
         system($cmd) == 0 || warn "Couldn't run $cmd : $! : $?";
     }

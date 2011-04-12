@@ -30,7 +30,8 @@ use Hum::Ace::Locus;
 
     sub store_hit_data_from_gff {
         my ($dbh, $gff_file) = @_;
-    
+
+        $dbh->begin_work;
         my $store = $dbh->prepare(q{
             INSERT OR REPLACE INTO accession_info (accession_sv
                   , taxon_id
@@ -41,7 +42,6 @@ use Hum::Ace::Locus;
             VALUES (?,?,?,?,?,?)
         });
     
-        $dbh->begin_work;
         open my $gff_fh, '<', $gff_file or confess "Can't read GFF file '$gff_file'; $!";
         while (<$gff_fh>) {
             next if /^\s*#/;

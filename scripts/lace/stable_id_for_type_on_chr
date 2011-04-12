@@ -66,7 +66,7 @@ use Bio::Otter::Lace::Defaults;
 sub get_types{
     my $ens_db = shift;
     my $types  = {};
-    my $sth    = $ens_db->prepare(qq`SELECT DISTINCT type FROM gene`);
+    my $sth    = $ens_db->prepare(q(SELECT DISTINCT type FROM gene));
     $sth->execute();
     while(my $row = $sth->fetchrow_arrayref){
         $types->{$row->[0]} = 1;

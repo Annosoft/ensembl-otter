@@ -95,6 +95,7 @@ sub print_agp {
           AND contig.seq_region_id = a_clone.cmp_seq_region_id
           AND a_clone.asm_seq_region_id = clone.seq_region_id
           AND chr.name = ?
+        ORDER BY a_chr.asm_start
     });
     $sth->execute($sequence_set);
     

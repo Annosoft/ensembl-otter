@@ -555,6 +555,7 @@ sub get_masked_unmasked_seq {
     my $dataset = $self->AceDatabase->smart_slice->DataSet;
 
     # mask the sequences with repeat features
+    my $offset = $self->AceDatabase->offset;
     foreach my $filter_name qw( trf RepeatMasker ) {
         my $filter = $dataset->filter_by_name($filter_name);
         confess "no filter named '${filter_name}'" unless $filter;
@@ -569,6 +570,8 @@ sub get_masked_unmasked_seq {
 
             # feature parameters
             my ( $start, $end ) = (split /\t/)[3,4];
+            $start -= $offset;
+            $end   -= $offset;
 
             # sanity checks
             confess "missing feature start in '$_'" unless defined $start;

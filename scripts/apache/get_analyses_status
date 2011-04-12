@@ -13,19 +13,22 @@ use Bio::Otter::ServerScriptSupport;
 
 my $ana_root = 'SubmitContig';
 
+my $select_analyses_sql = <<'SQL'
+SELECT rc.rule_condition
+     , a.logic_name
+FROM analysis a
+   , rule_goal rg
+   , rule_conditions rc
+WHERE a.analysis_id = rg.goal
+  AND rg.rule_id = rc.rule_id
+SQL
+    ;
+
 sub get_possible_analyses {
     my ($pdbc) = @_;
 
     my %rule = ();
-    my $rule_sth = $pdbc->prepare(qq{
-        SELECT rc.rule_condition
-             , a.logic_name
-        FROM analysis a
-           , rule_goal rg
-           , rule_conditions rc
-        WHERE a.analysis_id = rg.goal
-          AND rg.rule_id = rc.rule_id
-        });
+    my $rule_sth = $pdbc->prepare($select_analyses_sql);
     $rule_sth->execute;
     while (my ($condition, $logic_name) = $rule_sth->fetchrow) {
         push @{$rule{$condition}}, $logic_name;
@@ -47,6 +50,32 @@ sub get_possible_analyses {
 }
 
 
+my $select_components_sql = <<'SQL'
+SELECT cmp.name, cs.version
+FROM coord_system cs
+  , seq_region cmp
+  , assembly a
+  , seq_region asm
+WHERE asm.name = ?
+  AND asm.seq_region_id = a.asm_seq_region_id
+  AND a.cmp_seq_region_id = cmp.seq_region_id
+  AND cmp.coord_system_id = cs.coord_system_id
+  AND cs.name = ?
+SQL
+    ;
+
+my $select_analyses_sql_format = <<'SQL'
+SELECT i.input_id
+  , a.logic_name
+  , i.created
+  , i.db_version
+FROM analysis a
+  , input_id_analysis i
+WHERE a.analysis_id = i.analysis_id
+  AND i.input_id IN (%s)
+SQL
+    ;
+
 sub get_analyses_status {
     my ($server) = @_;
 
@@ -56,20 +85,8 @@ my $component_cs = $server->param('component_cs') || 'contig';
 my $pdbc = $server->pipeline_dba()->dbc();  # pipeline dbc
 
 my @input_ids = ();
-
-my $cmp_sth = $pdbc->prepare(qq{
-    SELECT cmp.name, cs.version
-    FROM coord_system cs
-      , seq_region cmp
-      , assembly a
-      , seq_region asm
-    WHERE asm.name = '$assembly'
-      AND asm.seq_region_id = a.asm_seq_region_id
-      AND a.cmp_seq_region_id = cmp.seq_region_id
-      AND cmp.coord_system_id = cs.coord_system_id
-      AND cs.name = '$component_cs'
-});
-$cmp_sth->execute();
+my $cmp_sth = $pdbc->prepare($select_components_sql);
+$cmp_sth->execute($assembly, $component_cs);
 
 while (my ($cmp_name, $cs_version) = $cmp_sth->fetchrow) {
     my @syll = split(/\./, $cmp_name);
@@ -87,19 +104,10 @@ if(! @input_ids) {
     return '';
 }
 
-my $input_id_str = join(', ', map { "'$_'" } @input_ids);
-my $sql_statement = qq{
-        SELECT i.input_id
-          , a.logic_name
-          , i.created
-          , i.db_version
-        FROM analysis a
-          , input_id_analysis i
-        WHERE a.analysis_id = i.analysis_id
-          AND i.input_id IN ($input_id_str)
-        };
+my $input_id_str = join ',', qw(?) x @input_ids;
+my $sql_statement = sprintf $select_analyses_sql_format, $input_id_str;
 my $input_sth = $pdbc->prepare($sql_statement);
-$input_sth->execute();
+$input_sth->execute(@input_ids);
 
 while(my ($input_id, $logic_name, $created, $db_version) = $input_sth->fetchrow_array) {
     $input_id=~s/^$component_cs:[^:]*:([^:]+):.*$/$1/;

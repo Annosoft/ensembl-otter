@@ -113,7 +113,6 @@ use Getopt::Long qw{ GetOptions };
     }
     
     my %cvs_params = (
-        #'ace_skeleton'          => ['/nfs/humace2/CVS_master', $release ],
         'PerlModules/Hum'           => [':ext:cvs.internal.sanger.ac.uk:/repos/cvs/anacode',    $release ],
         'ensembl-ace'               => [':ext:cvs.sanger.ac.uk:/cvsroot/ensembl',               $release ],
         'ensembl-otter/modules'     => [':ext:cvs.sanger.ac.uk:/cvsroot/ensembl',               $release ],

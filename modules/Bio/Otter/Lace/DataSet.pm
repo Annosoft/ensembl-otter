@@ -55,6 +55,12 @@ sub _filter_by_name {
         $filter->$meth($arg);
     }
 
+    if (@{ $filter->featuresets } > 1
+        && $filter->zmap_style) {
+        warn "Filter $name: You can't specify a zmap_style for a filter with multiple featuresets.";
+        return;
+    }
+
     return $filter;
 }
 
@@ -73,11 +79,6 @@ sub _filters {
         my $filter = $self->filter_by_name($name);
         next unless $filter;
         $filter->wanted($wanted);
-        if (scalar(@{ $filter->featuresets }) > 1
-            && $filter->zmap_style) {
-            warn "Filter $name: You can't specify a zmap_style for a filter with multiple featuresets.";
-            next;
-        }
         push @$filters, $filter;
     }
 
@@ -228,18 +229,23 @@ sub fetch_all_CloneSequences_for_selected_SequenceSet {
 }
 
 sub fetch_all_CloneSequences_for_SequenceSet {
-    my( $self, $ss, $other_things_too ) = @_;
+    my( $self, $ss ) = @_;
+    confess "Missing SequenceSet argument" unless $ss;
+    my $client = $self->Client or confess "No otter Client attached";
+    my $cs_list=$client->get_all_CloneSequences_for_DataSet_SequenceSet($self, $ss);
+    return $cs_list;
+}
+
+sub fetch_notes_locks_status_for_SequenceSet {
+    my( $self, $ss ) = @_;
     confess "Missing SequenceSet argument" unless $ss;
     my $client = $self->Client or confess "No otter Client attached";
 
-    my $cs_list=$client->get_all_CloneSequences_for_DataSet_SequenceSet($self, $ss);
-    if($other_things_too) {
-        $client->fetch_all_SequenceNotes_for_DataSet_SequenceSet($self, $ss);
-        $client->lock_refresh_for_DataSet_SequenceSet($self, $ss);
-        $client->status_refresh_for_DataSet_SequenceSet($self, $ss);
-    }
+    $client->fetch_all_SequenceNotes_for_DataSet_SequenceSet($self, $ss);
+    $client->lock_refresh_for_DataSet_SequenceSet($self, $ss);
+    $client->status_refresh_for_DataSet_SequenceSet($self, $ss);
 
-    return $cs_list;
+    return;
 }
 
 #

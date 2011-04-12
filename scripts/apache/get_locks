@@ -11,85 +11,63 @@ use SangerPaths qw{ core bioperl123 ensembl61 otter54 };
 
 use Bio::Otter::ServerScriptSupport;
 
+my $select_locks_sql = <<'SQL'
+SELECT DISTINCT cl.name
+  , concat(embl_acc.value, '.', embl_version.value)
+  , ctg.name
+  , l.hostname
+  , l.timestamp
+  , aut.author_name
+  , aut.author_email
+FROM (seq_region cl
+  , seq_region ctg
+  , assembly cl2ctg
+  , seq_region_attrib embl_acc
+  , assembly chr2ctg
+  , seq_region chr
+  , seq_region_attrib embl_version)
+LEFT JOIN contig_lock l
+  ON ctg.seq_region_id = l.seq_region_id
+LEFT JOIN author aut
+  ON aut.author_id = l.author_id
+WHERE cl2ctg.asm_seq_region_id = cl.seq_region_id
+  AND cl2ctg.cmp_seq_region_id = ctg.seq_region_id
+  AND cl.coord_system_id =
+(SELECT coord_system_id
+    FROM coord_system
+    WHERE name = 'clone')
+  AND ctg.coord_system_id =
+(SELECT coord_system_id
+    FROM coord_system
+    WHERE name = 'contig')
+  AND embl_acc.seq_region_id = cl.seq_region_id
+  AND embl_acc.attrib_type_id =
+(SELECT attrib_type_id
+    FROM attrib_type
+    WHERE code = 'embl_acc')
+  AND embl_version.seq_region_id = cl.seq_region_id
+  AND embl_version.attrib_type_id =
+(SELECT attrib_type_id
+    FROM attrib_type
+    WHERE code = 'embl_version')
+  AND chr.name = ?
+  AND chr2ctg.asm_seq_region_id = chr.seq_region_id
+  AND chr2ctg.cmp_seq_region_id = ctg.seq_region_id
+  AND l.contig_lock_id IS NOT NULL
+ORDER BY l.timestamp
+SQL
+    ;
+
 sub get_locks {
     my ($server) = @_;
 
-my $asm_type = $server->param('type');
-my $aut_name = $server->param('author');
-
-my $sql = qq{
-    SELECT DISTINCT cl.name
-      , concat(embl_acc.value, '.', embl_version.value)
-      , ctg.name
-      , l.hostname
-      , l.timestamp
-      , aut.author_name
-      , aut.author_email
-    FROM (seq_region cl
-      , seq_region ctg
-      , assembly cl2ctg
-      , seq_region_attrib embl_acc }
-
-  . (
-    $asm_type
-    ? qq{
-      , assembly chr2ctg
-      , seq_region chr }
-    : ''
-  )
-
-  . qq{
-      , seq_region_attrib embl_version)
-    LEFT JOIN contig_lock l
-      ON ctg.seq_region_id = l.seq_region_id
-    LEFT JOIN author aut
-      ON aut.author_id = l.author_id
-    WHERE cl2ctg.asm_seq_region_id = cl.seq_region_id
-      AND cl2ctg.cmp_seq_region_id = ctg.seq_region_id
-      AND cl.coord_system_id =
-    (SELECT coord_system_id
-        FROM coord_system
-        WHERE name = 'clone')
-      AND ctg.coord_system_id =
-    (SELECT coord_system_id
-        FROM coord_system
-        WHERE name = 'contig')
-      AND embl_acc.seq_region_id = cl.seq_region_id
-      AND embl_acc.attrib_type_id =
-    (SELECT attrib_type_id
-        FROM attrib_type
-        WHERE code = 'embl_acc')
-      AND embl_version.seq_region_id = cl.seq_region_id
-      AND embl_version.attrib_type_id =
-    (SELECT attrib_type_id
-        FROM attrib_type
-        WHERE code = 'embl_version') }
-
-  . (
-    $asm_type
-    ? qq{
-      AND chr.name = "$asm_type"
-      AND chr2ctg.asm_seq_region_id = chr.seq_region_id
-      AND chr2ctg.cmp_seq_region_id = ctg.seq_region_id }
-    : ''
-  )
-
-  . ($aut_name ? qq{ AND aut.author_name = "$aut_name" } : '')
-
-  . qq{
-       AND l.contig_lock_id IS NOT NULL
-    ORDER BY l.timestamp
-};
-
-
-
-my $sth = $server->otter_dba()->dbc()->prepare($sql);
-$sth->execute();
-
-my $output_string = '';
-while (my (@columns) = $sth->fetchrow()) {
-    $output_string .= join("\t", @columns)."\n";
-}
+    my $asm_type = $server->require_argument('type');
+    my $sth = $server->otter_dba()->dbc()->prepare($select_locks_sql);
+    $sth->execute($asm_type);
+    my $output_string = '';
+    while (my (@columns) = $sth->fetchrow()) {
+        $output_string .= join("\t", @columns)."\n";
+    }
 
     return $server->otter_wrap_response($output_string);
 }

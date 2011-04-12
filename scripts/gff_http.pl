@@ -5,10 +5,11 @@ use warnings;
 
 use Digest::MD5 qw(md5_hex);
 use URI::Escape qw(uri_escape uri_unescape);
+use Time::HiRes qw(time);
 
 my $gff_source;
 sub _log_prefix {
-    my $now = time;
+    my $now = CORE::time;
     return sprintf "%02d:%02d:%02d: %6d: %-35s "
         , (localtime($now))[2,1,0], $$, ($gff_source || '???');
 }
@@ -63,7 +64,7 @@ open $log_file, '>>', 'gff_log.txt';
 log_message "starting";
 
 $args{log} = 1 if $LOG; # enable logging on the server
-$args{rebase} = 1 unless $ENV{OTTERLACE_CHROMOSOME_COORDINATES};
+$args{rebase} = 0;
 
 # concatenate the rest of the arguments into a parameter string
 
@@ -135,21 +136,13 @@ my $request_start_time = time;
 my $response = $ua->request($request);
 die "No response for $gff_source\n" unless $response;
 my $request_finish_time = time;
-my $request_time = $request_finish_time - $request_start_time;
-log_message "http: finish: time (seconds): $request_time";
+my $request_time = time_diff($request_start_time, $request_finish_time);
+log_message "http: finish: $request_time";
 
 if ($response->is_success) {
 
     my $gff = $response->decoded_content;
     die "Unexpected response for $gff_source: $gff\n" unless $gff =~ /EnsEMBL2GFF/;
-
-    # Send data to zmap on STDOUT
-    log_message "sending data: start";
-    my $send_data_start_time = time;
-    print $gff;
-    my $send_data_finish_time = time;
-    my $send_data_time = $send_data_finish_time - $send_data_start_time;
-    log_message "sending data: finish: time (seconds): $send_data_time";
 
     # cache the result
     log_message "caching: start";
@@ -158,23 +151,47 @@ if ($response->is_success) {
     print $cache_file_h $gff;
     close $cache_file_h or die "Error writing to '$cache_file'; $!";
     my $cache_finish_time = time;
-    my $cache_time = $cache_finish_time - $cache_start_time;
-    log_message "caching: finish: time (seconds): $cache_time";
+    my $cache_time = time_diff($cache_start_time, $cache_finish_time);
+    log_message "caching: finish: $cache_time";
 
     # update the SQLite db
     log_message "SQLite update: start";
     my $sqlite_update_start_time = time;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$session_dir/otter.sqlite", undef, undef, {
         RaiseError => 1,
-        AutoCommit => 1,
-                           });
-    my $sth = $dbh->prepare(
-        q{ UPDATE otter_filter SET done = 1, failed = 0, gff_file = ?, process_gff = ? WHERE filter_name = ? }
-        );
-    $sth->execute($cache_file, $process_gff || 0, $gff_source);
+        AutoCommit => 0,
+    });
+    eval {
+        my $sth = $dbh->prepare(
+            q{ UPDATE otter_filter SET done = 1, failed = 0, gff_file = ?, process_gff = ? WHERE filter_name = ? }
+            );
+        $sth->execute($cache_file, $process_gff || 0, $gff_source);
+    };
+    if (my $err = $@) {
+        $dbh->rollback;
+        my $msg = "Update of otter_filter table in SQLite db failed; $err";
+        log_message $msg;
+        die $msg;
+    }
+    else {
+        $dbh->commit;
+    }
+    $dbh->disconnect;
     my $sqlite_update_finish_time = time;
-    my $sqlite_update_time = $sqlite_update_finish_time - $sqlite_update_start_time;
-    log_message "SQLite update: finish: time (seconds): $sqlite_update_time";
+    my $sqlite_update_time = time_diff($sqlite_update_start_time, $sqlite_update_finish_time);
+    log_message "SQLite update: finish: $sqlite_update_time";
+
+    # if (rand() < 0.5) {
+    #     die "Horribly";
+    # }
+    
+    # Send data to zmap on STDOUT
+    log_message "sending data: start";
+    my $send_data_start_time = time;
+    print STDOUT $gff;
+    my $send_data_finish_time = time;
+    my $send_data_time = time_diff($send_data_start_time, $send_data_finish_time);
+    log_message "sending data: finish: $send_data_time";
 
     # zmap waits for STDOUT to be closed as an indication that all
     # data has been sent, so we close the handle now so that zmap
@@ -204,4 +221,10 @@ else {
     }
 
     die "Webserver error for $gff_source: $err_msg\n";
+}
+
+sub time_diff {
+    my ($start_time, $end_time) = @_;
+    
+    return sprintf "time (sec): %.3f", $end_time - $start_time;
 }

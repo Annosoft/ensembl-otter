@@ -109,6 +109,7 @@ sub init_db {
         my ($self) = @_;
 
         my $dbh = $dbh{$self};
+        $dbh->begin_work;
 
         my %existing_table = map {$_->[0] => 1}
             @{ $dbh->selectall_arrayref(q{SELECT name FROM sqlite_master WHERE type = 'table'}) };
@@ -127,6 +128,7 @@ sub init_db {
                 $dbh->do("CREATE INDEX $idx ON $index_defs{$idx}");
             }
         }
+        $dbh->commit;
 
         return;
     }

@@ -203,7 +203,6 @@ sub get_region_xml {
         'get_region',
         {
             %{$self->toHash},
-            'email'     => $client->email,
             'trunc'     => $client->fetch_truncated_genes,
         },
     );
@@ -221,7 +220,6 @@ sub lock_region_xml {
         'lock_region',
         {
             %{$self->toHash},
-            'email'    => $client->email(),
             'hostname' => $client->client_hostname(),
         }
     );
