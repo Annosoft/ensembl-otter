@@ -224,9 +224,11 @@ sub session_path {
     my $readonly_tag = $write_access ? '' : '.ro';
     $session_number++;
 
+    my $user = (getpwuid($<))[0];
+
     return
-        sprintf "%s_%d.%d%s.%d",
-        $session_root, $self->version, $$, $readonly_tag, $session_number;
+        sprintf "%s_%d.%s.%d%s.%d",
+        $session_root, $self->version, $user, $$, $readonly_tag, $session_number;
 }
 
 sub all_sessions {
@@ -245,9 +247,8 @@ sub _session_from_dir {
     # this ignores completed sessions, as they have been renamed to
     # end in ".done"
 
-    return unless
-        my ( $pid ) =
-        $dir =~ /_[[:digit:]]+\.([[:digit:]]+)(?:\.ro)?\.[[:digit:]]+$/;
+    my ($pid) = $dir =~ m{lace[^/]+\.(\d+)(\.ro)?\.\d+$};
+    return unless $pid;
 
     # Skip if directory is not ours
     my ($owner, $mtime) = (stat($dir))[4,9];
@@ -262,7 +263,6 @@ sub all_session_dirs {
     my $session_dir_pattern =
         sprintf "%s_%s.*", $session_root, $self->version;
     my @session_dirs = glob($session_dir_pattern);
-
     return @session_dirs;
 }
 

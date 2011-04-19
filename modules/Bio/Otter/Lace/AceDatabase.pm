@@ -710,16 +710,16 @@ sub script_dir {
     my $script_dir = $ENV{'OTTER_HOME'} . '/ensembl-otter/scripts';
     unless (-d $script_dir) {
         $script_dir = undef;
-        foreach (grep { m{ensembl-otter/} } @INC) {
+        foreach (grep { m{ensembl-otter} } @INC) {
             my $otter = $_;     # Make a copy so that we don't modify @INC
-            $otter =~ s{ensembl-otter/.+}{ensembl-otter/scripts};
+            $otter =~ s{[^/]+$}{scripts};
             if (-d $otter) {
                 $script_dir = $otter;
                 last;
             }
         }
     }
-    die "Could not find script_dir (ensembl-otter/scripts)" unless $script_dir;
+    die "Could not find directory for Zmap script-dir parameter (usually ensembl-otter/scripts)" unless $script_dir;
     return $script_dir;
 }
 
@@ -780,8 +780,8 @@ sub DESTROY {
     if ($@) {
         warn "Error in AceDatabase::DESTROY : $@";
     } else {
-        rename $home, "${home}.done"
-            or die "Error renaming the session directory.";
+        rename($home, "${home}.done")
+            or die "Error renaming the session directory; $!";
     }
     
     if ($callback) {
