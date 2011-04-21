@@ -34,7 +34,7 @@ sub new {
 
     my ($host, $port, $user, $name) = @args;
 
-    $self->host($host || 'cbi3');
+    $self->host($host || 'cbi5d');
     $self->port($port || 3306);
     $self->user($user || 'genero');
     $self->name($name || 'mm_ini');
@@ -60,7 +60,7 @@ sub _get_connection {
         # find the correct host and db to connect to from the connections table
         
         my $arch_sth = $dbh_mm_ini->prepare(qq{
-            SELECT db_name, port, username, host
+            SELECT db_name, port, username, host, poss_nodes
             FROM connections
             WHERE is_active = 'yes'
             LIMIT 1
@@ -72,7 +72,7 @@ sub _get_connection {
         
         my $dsn = "DBI:mysql:".
             "database=".$db_details->{'db_name'}.
-            ";host=".$db_details->{'host'}.
+            ";host=".$db_details->{'host'}.$db_details->{'poss_nodes'}.
             ";port=".$db_details->{'port'};
             
         $dbh = DBI->connect($dsn, $db_details->{'username'}, '', { 'RaiseError' => 1 });
