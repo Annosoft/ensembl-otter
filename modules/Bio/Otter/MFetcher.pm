@@ -639,11 +639,15 @@ sub fetch_mapped_features {
 sub Bio::EnsEMBL::Gene::propagate_slice {
     my ($gene, $slice) = @_;
 
-    foreach my $exon (@{ $gene->get_all_Exons }) {
-        $exon->slice($slice);
-    }
     foreach my $transcript (@{ $gene->get_all_Transcripts }) {
         $transcript->slice($slice);
+
+        # We don't call get_all_Exons on the gene because sometimes each
+        # transcript has its own copy of each exon (ie: same dbID, but not
+        # the same object in memory).
+        foreach my $exon (@{ $transcript->get_all_Exons }) {
+            $exon->slice($slice);
+        }
     }
     $gene->slice($slice);
 
