@@ -1,0 +1,23 @@
+Development of "ensembl-otter" has moved to Git.
+
+The old files will remain here for some months to assist your
+migration to Git, but will receive no further updates.
+
+
+
+Internal users may find instructions at
+  http://mediawiki.internal.sanger.ac.uk/wiki/index.php/Anacode:_Version_Control
+
+and obtain the code via
+  git clone intcvs1:/repos/git/anacode/ensembl-otter.git
+  http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi
+
+
+
+External users are invited to contact the team.  We will arrange
+publication via a Git hosting service.
+
+
+
+				the Anacode team
+				2011-05-31
