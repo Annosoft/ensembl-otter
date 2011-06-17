@@ -73,7 +73,6 @@ fix_permissions() {
     local dir
     dir=$1
 
-    chgrp -R anacode "$dir" &&
     find "$dir" -type d -exec chmod g+s \{\} \; &&
     /bin/true
 }
