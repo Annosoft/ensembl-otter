@@ -26,6 +26,8 @@ use Hum::Conf qw{ PFETCH_SERVER_LIST };
 my      $REGION_XML_FILE =      '.region.xml';
 my $LOCK_REGION_XML_FILE = '.lock_region.xml';
 
+my $ZMAP_DEBUG = $ENV{OTTERLACE_ZMAP_DEBUG};
+
 
 sub new {
     my( $pkg ) = @_;
@@ -337,7 +339,7 @@ sub zmap_config {
             'script-dir'      => $self->script_dir,
             'pfetch-mode'     => ( $pfetch_www ? 'http' : 'pipe' ),
             'pfetch'          => ( $pfetch_www ? $pfetch_url : 'pfetch' ),
-            'xremote-debug'   => $self->xremote_debug ? 'true' : 'false',
+            'xremote-debug'   => $ZMAP_DEBUG ? 'true' : 'false',
             %{$self->smart_slice->zmap_config_stanza},
         },
     };
@@ -835,12 +837,6 @@ sub script_arguments {
     };
 
     return $arguments; 
-}
-
-sub xremote_debug {
-    my ($self) = @_;
-    return $self->{_xremote_debug} ||=
-        $self->Client->xremote_debug;
 }
 
 

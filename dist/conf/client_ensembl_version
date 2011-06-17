@@ -1,1 +1,6 @@
 62
+
+# This is the version of EnsEMBL that the Otterlace client uses.  The
+# install script uses this to check out the correct branch from the
+# EnsEMBL repositories into the installation directories.  It does not
+# affect the source code.

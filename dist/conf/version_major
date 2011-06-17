@@ -1,0 +1,6 @@
+55
+
+# This is the Otterlace major version.  It determines the otter tag
+# that appears in the "use SangerPaths ...:" declarations in
+# scripts/apache/*.  Together with the version_minor configuration
+# parameter it determines the installation directories.

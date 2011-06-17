@@ -1,0 +1,5 @@
+BUILD.DEVELOPMENT
+
+# This is the path (relative to ~zmap) the top-level directory of the
+# ZMap release.  The install script copies ZMap and AceDB binaries
+# from here into the installation directory.

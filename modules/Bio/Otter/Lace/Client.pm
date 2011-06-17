@@ -1243,12 +1243,6 @@ sub kill_old_sgifaceserver {
 
 ############## Session recovery methods end here ############################
 
-sub xremote_debug {
-    my ($self) = @_;
-    return $self->{_xremote_debug} ||=
-        $self->config_value('xremote-debug') ? 1 : 0;
-}
-
 1;
 
 __END__

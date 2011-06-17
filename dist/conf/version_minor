@@ -1,0 +1,6 @@
+
+
+# This is the Otterlace minor version.  It is empty in the development
+# branches and non-empty in the test and release branches.  Together
+# with the version_major configuration parameter it determines the
+# installation directories.

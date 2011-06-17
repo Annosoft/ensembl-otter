@@ -1,0 +1,251 @@
+#!/bin/bash
+
+
+# TO DO
+
+# Install the server-side data files (which are allegedly managed in
+# the ace_skeleton CVS repository).
+
+# Locking.  But is this possible when the files we are changing are
+# NFS-mounted?  Maybe ssh to a designated lock host and lock a local
+# file?
+
+# / TO DO
+
+
+# NB
+
+# We must build the binary XRemote module with the same version of
+# Perl that our scripts use, because binary modules are installed to
+# version-dependent locations.  Therefore we start the $PATH with
+# /software/bin so that perl is certain to be /software/bin/perl.
+
+# But /software/bin/perl will try to build the binary XRemote module
+# with the same version of gcc that it was built with, which is not
+# the version of gcc on modern hosts.  Therefore we tell perl to set
+# CC and LD to gcc, so that the build will use the local gcc.
+
+# / NB
+
+
+# go to the right place first
+cd "$( dirname "$0" )/../.."
+ensembl_otter_root="$( pwd )"
+
+
+config_value() {
+    local key
+    key=$1
+    head -n 1 -- "$( dirname "$0" )/../conf/${key}"
+}
+
+
+version_major="$( config_value version_major )"
+version_minor="$( config_value version_minor )"
+testing="$( config_value testing )"
+client_ensembl_version="$( config_value client_ensembl_version )"
+zmap_path="$( config_value zmap_path )"
+
+if [ -n "$version_minor" ]
+then
+    version="${version_major}.${version_minor}"
+else
+    version="$version_major"
+fi
+
+zmap_home=~zmap
+zmap_root="${zmap_home}/${zmap_path}"
+zmap_prefix="${zmap_root}/Linux_$( uname -m )"
+
+# EXTERNAL PARAMETERS
+build_log=/nfs/anacode/otterlace/ensembl_otter_build_log.txt
+anacode_cvsroot=:ext:cvs.internal.sanger.ac.uk:/repos/cvs/anacode
+ensembl_cvsroot=:ext:cvs.sanger.ac.uk:/cvsroot/ensembl
+otterlace_server_root=/nfs/WWWdev/SANGER_docs
+otterlace_prefix="/software/anacode/otter/otter_rel${version}"
+# echo "otterlace_prefix = '${otterlace_prefix}'" ; exit # uncomment to test
+# / EXTERNAL PARAMETERS
+
+
+ensembl_cvs_flags="-r branch-ensembl-${client_ensembl_version}"
+
+fix_permissions() {
+    local dir
+    dir=$1
+
+    chgrp -R anacode "$dir" &&
+    find "$dir" -type d -exec chmod g+s \{\} \; &&
+    /bin/true
+}
+
+git_cache_create() {
+    local install_dir
+    install_dir="$1"
+
+    # we create the cache using the modules in the git repository and
+    # test by dumping the cache using the modules in the installation
+    # directory
+
+    perl -I"${ensembl_otter_root}/modules" -MBio::Otter::Git \
+        -e 'Bio::Otter::Git->_create_cache(@ARGV);' "$install_dir" &&
+    perl -I"$install_dir" -MBio::Otter::Git \
+        -e 'Bio::Otter::Git->dump;' &&
+    /bin/true
+}
+
+otterlace_server_install() {
+
+    echo ""
+    echo "installing server"
+
+    echo "installing server: perl modules"
+    {
+        lib_dir="${otterlace_server_root}/lib/otter/${version_major}"
+        mkdir -p -- "$lib_dir" &&
+        rsync -v -r --delete \
+            "${ensembl_otter_root}/modules/Bio" \
+            "$lib_dir" &&
+        fix_permissions "$lib_dir" &&
+        git_cache_create "$lib_dir" &&
+        /bin/true ; } &&
+
+    echo "installing server: CGI scripts"
+    {
+        cgi_bin_dir="${otterlace_server_root}/cgi-bin/otter/${version_major}"
+        mkdir -p -- "$cgi_bin_dir" &&
+        rsync -v -r --delete \
+            "${ensembl_otter_root}/scripts/apache/" \
+            "$cgi_bin_dir" &&
+        fix_permissions "$cgi_bin_dir" &&
+        /bin/true ; } &&
+
+    /bin/true
+}
+
+otterlace_client_install_perl_modules() {
+    echo &&
+    echo "installing perl modules" &&
+
+    ( cd "$otterlace_prefix" &&
+
+        cvs -d "$ensembl_cvsroot" \
+            checkout $ensembl_cvs_flags \
+            ensembl/modules &&
+
+        cvs -d "$ensembl_cvsroot" \
+            checkout $ensembl_cvs_flags \
+            ensembl-variation/modules &&
+
+        cvs -d "$anacode_cvsroot" checkout PerlModules/Hum           &&
+        cvs -d "$ensembl_cvsroot" checkout ensembl-analysis/modules  &&
+
+        mkdir -p -- ensembl-otter &&
+        rsync -v -r --delete \
+            ${ensembl_otter_root}/{modules,scripts,tk} \
+            ensembl-otter &&
+
+        /bin/true ) &&
+
+    git_cache_create "${otterlace_prefix}/ensembl-otter/modules" &&
+
+    /bin/true
+}
+
+otterlace_client_install_xremote() {
+    build_dir="/tmp/otterlace_xremote_build/$$"
+    rm -rf -- "$build_dir" &&
+    mkdir -p -- "$build_dir" &&
+    ( cd "$build_dir" &&
+        cp -r -- "${zmap_root}/ZMap/src/perl/X11-XRemote-0.01" . &&
+        cd X11-XRemote-0.01 &&
+        perl Makefile.PL \
+            PREFIX=${otterlace_prefix} \
+            CC=gcc \
+            LD=gcc \
+            --with-zmap-libs "${zmap_prefix}/lib" \
+            --with-zmap-inc  "${zmap_prefix}/include" \
+            --with-symbols \
+            &&
+        make &&
+        make install &&
+        rm -rf -- "$build_dir" &&
+        /bin/true )
+}
+
+otterlace_client_install_acedb_zmap() {
+    local bin_dir
+    bin_dir="${otterlace_prefix}/bin"
+
+    mkdir -p -- "$bin_dir" &&
+    cp -v -- ${zmap_prefix}/bin/* "$bin_dir" &&
+    /bin/true
+}
+
+otterlace_client_install() {
+
+    otterlace_local="/software/anacode/bin/otterlace_rel${version}"
+
+    echo ""
+    echo "client install"
+    echo "network host: ${otterlace_client_host}"
+    echo "host name: $( hostname )"
+    echo "arch: $( uname -m )"
+    echo "debian version: $( cat /etc/debian_version )"
+
+    echo &&
+    echo "removing old otterlace installation" &&
+    rm -rf -- "$otterlace_prefix" &&
+    mkdir -- "$otterlace_prefix" &&
+    otterlace_client_install_perl_modules &&
+    otterlace_client_install_xremote &&
+    otterlace_client_install_acedb_zmap &&
+    fix_permissions "$otterlace_prefix" &&
+
+    cp -v -- dist/scripts/otterlace_local "$otterlace_local" &&
+    sed -i \
+        -e "/^version=/s/=.*/=${version}/" \
+        -e "/^testing=/s/=.*/=${testing}/" \
+        "$otterlace_local" &&
+    chmod -v 775 "$otterlace_local" &&
+
+    /bin/true
+}
+
+otterlace_install() {
+
+    install="${ensembl_otter_root}/dist/scripts/$( basename "$0" )"
+
+    otterlace_server_install &&
+    for host in \
+        lenny-dev32 \
+        lenny-dev64 \
+        ; do
+        ssh "$host" "$install" "--client-install=${host}"
+    done
+
+    date="$( date +'%Y/%m/%d-%H:%M:%S' )"
+    commit="$( git rev-list --max-count=1 HEAD )"
+    if [ -n "$commit" ]
+    then
+        commit="NONE"
+    fi
+    echo "${date}: ${version}: ${commit}" >> "$build_log"
+}
+
+# environment
+export PATH=/software/bin:/bin:/usr/bin:/usr/local/bin
+export LD_LIBRARY_PATH=
+umask 002 # NB: running over ssh can set a surprising umask
+
+if [ -n "$1" ]
+then
+    case "$1" in
+        --client-install=*)
+        otterlace_client_host="$( echo "$1" | sed -n -e 's|^--client-install=||p' )"
+        otterlace_client_install
+        ;;
+        *) echo "$( basename "$0" ): usage error" >&2 ; exit 1 ; ;;
+    esac
+else
+    otterlace_install
+fi
