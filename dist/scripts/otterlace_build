@@ -219,7 +219,7 @@ otterlace_install() {
         lenny-dev32 \
         lenny-dev64 \
         ; do
-        ssh "$host" "$install" "--client-install=${host}"
+        ssh -A "$host" "$install" "--client-install=${host}"
     done
 
     date="$( date +'%Y/%m/%d-%H:%M:%S' )"
