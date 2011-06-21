@@ -7,6 +7,7 @@ use warnings;
 use Carp;
 use ZMap::Connect;
 use ZMap::XRemoteCache;
+use Data::Dumper;
 use XML::Simple;
 use Bio::Vega::Utils::XmlEscape qw{ xml_escape };
 use File::Path qw{ mkpath };
@@ -14,6 +15,9 @@ use Config::IniFiles;
 use POSIX;
 
 my $ZMAP_DEBUG = $ENV{OTTERLACE_ZMAP_DEBUG};
+
+$Data::Dumper::Terse = 1;
+$Data::Dumper::Indent = 1;
 
 #==============================================================================#
 #
