@@ -224,7 +224,7 @@ otterlace_install() {
 
     date="$( date +'%Y/%m/%d-%H:%M:%S' )"
     commit="$( git rev-list --max-count=1 HEAD )"
-    if [ -n "$commit" ]
+    if [ -z "$commit" ]
     then
         commit="NONE"
     fi
