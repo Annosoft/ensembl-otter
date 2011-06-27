@@ -380,7 +380,7 @@ sub blixem_config {
         },
 
         'region-fetch' => {
-            'script' => '/nfs/anacode/otterlace/bin/bam_get',
+            'script' => 'bam_get',
         },
 
     };
