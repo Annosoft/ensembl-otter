@@ -52,6 +52,10 @@ $Bio::Otter::Git::CACHE = {
 %s};
 
 1;
+
+=head1 AUTHOR
+
+Ana Code B<email> anacode@sanger.ac.uk
 CACHE_TEMPLATE
     ;
 
