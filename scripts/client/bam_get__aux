@@ -1,0 +1,237 @@
+#!/software/bin/perl
+
+use strict;
+use warnings;
+
+use XML::Simple;
+
+use Data::Dumper;
+
+use lib qw(
+/software/anacode/otter/otter_rel55/PerlModules
+/software/anacode/otter/otter_rel55/ensembl/modules
+/software/anacode/otter/otter_rel55/ensembl-otter/modules
+/nfs/users/nfs_s/searle/bam/progs/BioPerl-1.6.1
+/nfs/users/nfs_s/searle/bam/progs/Bio-SamTools-1.20/lib
+/nfs/users/nfs_s/searle/bam/inst/lib/BioSamtools/lib/site_perl/5.8.8/x86_64-linux-thread-multi
+);
+
+use Bio::Tools::GFF;
+use Bio::DB::Sam;
+use Bio::Otter::Lace::Defaults;
+
+# my $fasta_path = q(/lustre/scratch102/projects/mouse/ref/NCBIM37_um.fa);
+
+# parse the command line
+my ($bam_path, $bam_cs, $dataset, $chr, $start, $end);
+unshift @ARGV
+    , -bam_path => q(/nfs/vertres02/projects/vrtrack_mouse_transcriptomes/REL-1009/__VRTrack_Release__/NOD_Mouse_Transcriptome/NOD_FatherBrain/SLX/raw.bam),
+    , -bam_cs  => 'NCBIM37',
+    , -dataset => 'mouse'
+    , -chr     => 'chr12-04',
+    , -start   => 14500000
+    , -end     => 16100000
+    ;
+Bio::Otter::Lace::Defaults::do_getopt(
+    "bam_path=s" => \$bam_path,
+    "bam_cs=s"   => \$bam_cs,
+    "dataset=s"  => \$dataset,
+    "chr=s"      => \$chr,
+    "start=i"    => \$start,
+    "end=i"      => \$end,
+    );
+
+# get the mapping from the Otter server
+my $client = Bio::Otter::Lace::Defaults::make_Client();
+my $mapping_xml = $client->otter_response_content(
+    'GET', 'get_mapping', {
+        dataset => $dataset,
+        chr     => $chr,
+        cs      => $bam_cs,
+    });
+my $mapping =
+    XMLin($mapping_xml,
+          ForceArray => [ qw(
+                      ) ],
+          KeyAttr => {
+          },
+    );
+die "failed to fetch a mapping" unless $mapping;
+# warn Dumper($mapping);
+
+# unpack the mapping
+my $equiv_chr;
+my $type = $mapping->{type};
+die "missing mapping type" unless $type;
+
+if ($type eq 'none') {
+    die "there is no mapping";
+}
+elsif ($type eq 'equiv') {
+    $equiv_chr = $mapping->{equiv_chr};
+    die "missing equivalent chr" unless $equiv_chr;
+}
+else {
+    die "invalid mapping type '${type}'";
+}
+
+my $sam = Bio::DB::Sam->new
+    (
+     -bam   => $bam_path,
+     # -fasta => $fasta_path,
+     );
+
+my @read_pairs = $sam->get_features_by_location(
+    -type   => 'read_pair',
+    -seq_id => $equiv_chr,
+    -start  => $start,
+    -end    => $end,
+    );
+warn sprintf "found %d read pairs\n", scalar @read_pairs;
+
+=pod
+
+my $sub_feature_counts = { };
+for (@read_pairs) {
+
+    # feature
+    die "oof\n" unless ref eq "Bio::SeqFeature::Lite";
+    die "no sequence" unless defined $_->seq;
+    die sprintf "sequence: '%s'\n", $_->seq unless $_->seq eq '';
+    die "strand\n" if $_->strand;
+    die "phase\n" if $_->phase;
+
+    # subfeatures
+    my @sub_features = $_->get_SeqFeatures;
+    $sub_feature_counts->{scalar @sub_features}++;
+    for (@sub_features) {
+        die "splat\n" unless ref eq "Bio::DB::Bam::AlignWrapper";
+        die "no sequence\n" unless defined $_->seq;
+        die sprintf "invalid sequence type: '%s'\n", ref $_->seq
+            unless ref $_->seq eq "Bio::PrimarySeq";
+        die "no strand\n" unless $_->strand;
+        die "phase\n" if defined $_->phase;
+    }
+}
+
+for (sort { $a <=> $b } keys %{$sub_feature_counts}) {
+    warn sprintf "%3d: %6d\n", $_, $sub_feature_counts->{$_};
+}
+
+=cut
+
+my $gff_version = 3;
+
+sub gff3_escape {
+    # escapes a minimal set of characters
+    s/([\t\r\n[:cntrl:];=%&])/sprintf "%%%02X", ord($1)/eg;
+    return;
+}
+
+sub gff3_escape_seqid {
+    # escapes everything except a restricted set of characters
+    s/([^-a-zA-Z0-9.:^*$@!+_?|])/sprintf "%%%02X", ord($1)/eg;
+    return;
+}
+
+sub gff3_escape_source {
+    # escapes everything except a restricted set of characters
+    s/([^-a-zA-Z0-9.:^*$@!+_? ])/sprintf "%%%02X", ord($1)/eg;
+    return;
+}
+
+sub gff3_escape_attribute {
+    # like gff3_escape, but escapes commas too
+    s/([\t\r\n[:cntrl:];=%&,])/sprintf "%%%02X", ord($1)/eg;
+    return;
+}
+
+sub gff3_escape_target {
+    # like gff3_escape, but escapes commas and spaces too
+    s/([\t\r\n[:cntrl:];=%&, ])/sprintf "%%%02X", ord($1)/eg;
+    return;
+}
+
+print
+    <<"GFF3",
+##gff-version $gff_version
+##sequence-region $chr $start $end
+
+GFF3
+    ;
+
+my $strands = {
+    1  => '+',
+    -1 => '-',
+};
+
+for (@read_pairs) {
+    my $name = $_->name;
+    for ($_->get_SeqFeatures) {
+        my $alignment = $_;
+
+        my $source = $_->source_tag;
+
+        my ($score) = $alignment->get_tag_values('AS');
+
+        my @fields =
+            (
+             $_->primary_tag,
+             (sprintf "%d", $_->start),
+             (sprintf "%d", $_->end),
+             (defined $score ? (sprintf "%f", $score) : '.'),
+             $strands->{$_->strand},
+             $_->phase || '.',
+             );
+
+        # $alignment->cigar_str has the wrong format for the Gap tag
+        # (eg. 76M instead of M76) so we have to build it from
+        # $alignment->cigar_array (which, strangely, has the operator
+        # and count arguments in the right order for the Gap tag even
+        # though $alignment->cigar_str has them in the wrong order)
+
+        my $gap = join ' ', map {
+            ($_->[0] eq 'S') ? ( ) : ( join '', @{$_} );
+        } @{$alignment->cigar_array};
+
+        # the Target tag - escaping this requires special handling of
+        # spaces in the query name
+
+        my $query = $alignment->query;
+        my $query_name = $query->name;
+        gff3_escape_target for $query_name;
+        my $query_strand = $strands->{$query->strand};
+        my @target_fields = ( $query->start, $query->end );
+        push @target_fields, $query_strand if $query_strand;
+        my $target .= join ' ', $query_name, @target_fields;
+
+        my $dna = $query->dna;
+
+        my $attributes = {
+
+#             ( map {
+#                 ( "bam_$_" => [ $alignment->get_tag_values($_) ] );
+#             } $alignment->get_all_tags ),
+
+            Name     => [ $name   ],
+            Gap      => [ $gap    ],
+            Target   => [ $target ],
+            sequence => [ $dna    ],
+        };
+
+        my $attributes_string = join ";", map { ## no critic (BuiltinFunctions::ProhibitComplexMappings)
+            my $values = $attributes->{$_};
+            unless ($_ eq 'Target') { # the Target tag is already escaped
+                gff3_escape_attribute for @{$values};
+            }
+            gff3_escape_attribute;
+            sprintf "%s=%s", $_, join ",", @{$values};
+        } keys %{$attributes};
+
+        gff3_escape_seqid  for $chr;
+        gff3_escape_source for $source;
+        gff3_escape for @fields;
+        printf "%s\n", join "\t"
+            , $chr, $source, @fields, $attributes_string;
+    }
+}

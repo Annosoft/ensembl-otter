@@ -1,0 +1,6 @@
+#!/bin/sh
+
+script="$( basename "$0" )"
+dir="$( cd "$( dirname "$0" )" && pwd )"
+
+exec ssh cbi4 "${dir}/${script}__aux" "$@"
