@@ -150,6 +150,15 @@ otterlace_client_install_perl_modules() {
     /bin/true
 }
 
+otterlace_client_install_scripts() {
+    local bin_dir
+    bin_dir="${otterlace_prefix}/bin"
+
+    mkdir -p -- "$bin_dir" &&
+    cp -v -- ${ensembl_otter_root}/scripts/client/* "$bin_dir" &&
+    /bin/true
+}
+
 otterlace_client_install_xremote() {
     build_dir="/tmp/otterlace_xremote_build/$$"
     rm -rf -- "$build_dir" &&
@@ -196,6 +205,7 @@ otterlace_client_install() {
     rm -rf -- "$otterlace_prefix" &&
     mkdir -- "$otterlace_prefix" &&
     otterlace_client_install_perl_modules &&
+    otterlace_client_install_scripts &&
     otterlace_client_install_xremote &&
     otterlace_client_install_acedb_zmap &&
     fix_permissions "$otterlace_prefix" &&
