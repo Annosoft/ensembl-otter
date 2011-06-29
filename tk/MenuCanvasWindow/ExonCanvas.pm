@@ -2654,6 +2654,8 @@ sub remove_spurious_splice_sites {
     
     my @pps = sort { $a->[0] <=> $b->[0] } $self->position_pairs;
     
+    return unless @pps;
+    
     my $initial_exon_id = $pps[0]->[2];
     my $terminal_exon_id = $pps[-1]->[2];
     
