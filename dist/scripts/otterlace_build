@@ -46,11 +46,15 @@ testing="$( config_value testing )"
 client_ensembl_version="$( config_value client_ensembl_version )"
 zmap_path="$( config_value zmap_path )"
 
+humpub_branch="humpub-branch-${version_major}"
+
 if [ -n "$version_minor" ]
 then
     version="${version_major}.${version_minor}"
+    humpub_release="humpub-release-${version_major}-${version_minor}"
 else
     version="$version_major"
+    humpub_release="HEAD"
 fi
 
 zmap_home=~zmap
@@ -135,8 +139,19 @@ otterlace_client_install_perl_modules() {
             checkout $ensembl_cvs_flags \
             ensembl-variation/modules &&
 
-        cvs -d "$anacode_cvsroot" checkout PerlModules/Hum           &&
-        cvs -d "$ensembl_cvsroot" checkout ensembl-analysis/modules  &&
+        # Needs for-loop a la make_dist (or function)
+
+        ( if [ -n "$version_minor" ]
+          then
+              cvs -d "$anacode_cvsroot" rtag -r "$humpub_branch" "$humpub_release" PerlModules/Hum
+          fi ) &&
+        cvs -d "$anacode_cvsroot" checkout -r "$humpub_release"                    PerlModules/Hum &&
+
+        ( if [ -n "$version_minor" ]
+          then
+              cvs -d "$ensembl_cvsroot" rtag -r "$humpub_branch" "$humpub_release" ensembl-analysis/modules
+          fi ) &&
+        cvs -d "$ensembl_cvsroot" checkout -r "$humpub_release"                    ensembl-analysis/modules &&
 
         mkdir -p -- ensembl-otter &&
         rsync -v -r --delete \
