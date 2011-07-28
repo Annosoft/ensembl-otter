@@ -1,4 +1,4 @@
-BUILDS/DEVELOPMENT_BUILDS/ZMap.develop-RELEASE_0-1-134-109-g9d1613b.BUILD
+./BUILDS/DEVELOPMENT_BUILDS/ZMap.develop-RELEASE_0-1-134-113-gbaf07b2.BUILD
 
 # This is the path (relative to ~zmap) the top-level directory of the
 # ZMap release.  The install script copies ZMap and AceDB binaries
