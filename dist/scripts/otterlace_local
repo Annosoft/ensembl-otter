@@ -30,7 +30,7 @@ else
 fi
 export LD_LIBRARY_PATH
 
-otterbin="$OTTER_HOME/bin:/software/anacode/bin:/software/pubseq/bin/EMBOSS-5.0.0/bin:/software/perl-5.12.2/bin"
+otterbin="$OTTER_HOME/bin:/software/anacode/bin:/software/pubseq/bin/EMBOSS-5.0.0/bin"
 
 if $testing
 then
@@ -83,4 +83,4 @@ fi
 
 export PERL5LIB
 
-exec perl "$OTTER_HOME/ensembl-otter/tk/otterlace" $@
+exec /software/bin/perl "$OTTER_HOME/ensembl-otter/tk/otterlace" $@

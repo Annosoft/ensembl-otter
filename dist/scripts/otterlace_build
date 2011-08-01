@@ -18,10 +18,9 @@
 # We must build the binary XRemote module with the same version of
 # Perl that our scripts use, because binary modules are installed to
 # version-dependent locations.  Therefore we start the $PATH with
-# (location of preferred Perl).
+# /software/bin so that perl is certain to be /software/bin/perl.
 
-# But /software/perl-5.8.8/bin/perl (which was used via
-# /software/bin/perl ) will try to build the binary XRemote module
+# But /software/bin/perl will try to build the binary XRemote module
 # with the same version of gcc that it was built with, which is not
 # the version of gcc on modern hosts.  Therefore we tell perl to set
 # CC and LD to gcc, so that the build will use the local gcc.
@@ -284,7 +283,7 @@ otterlace_install() {
 }
 
 # environment
-export PATH=/software/perl-5.12.2/bin:/bin:/usr/bin:/usr/local/bin
+export PATH=/software/bin:/bin:/usr/bin:/usr/local/bin
 export LD_LIBRARY_PATH=
 umask 002 # NB: running over ssh can set a surprising umask
 
