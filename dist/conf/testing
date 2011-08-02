@@ -1,4 +1,4 @@
-true
+false
 
 # This determines whether this is a test version or a release version.
 # It is true in the test and development branches and false in the
