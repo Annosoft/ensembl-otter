@@ -42,7 +42,6 @@ config_value() {
 
 version_major="$( config_value version_major )"
 version_minor="$( config_value version_minor )"
-testing="$( config_value testing )"
 client_ensembl_version="$( config_value client_ensembl_version )"
 zmap_path="$( config_value zmap_path )"
 
@@ -255,7 +254,6 @@ otterlace_client_install() {
     cp -- dist/scripts/otterlace_local "$otterlace_local" &&
     sed -i \
         -e "/^version=/s/=.*/=${version}/" \
-        -e "/^testing=/s/=.*/=${testing}/" \
         "$otterlace_local" &&
     chmod -v 775 "$otterlace_local" &&
     /bin/true

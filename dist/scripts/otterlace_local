@@ -2,7 +2,6 @@
 
 # the installation script will append the proper values to these lines
 version=
-testing=
 
 # check that the installation script has set things up
 if [ -z "$version" ]
@@ -32,12 +31,10 @@ export LD_LIBRARY_PATH
 
 otterbin="$OTTER_HOME/bin:/software/anacode/bin:/software/pubseq/bin/EMBOSS-5.0.0/bin"
 
-if $testing
+if [ -n "$ZMAP_BIN" ]
 then
-    if [ -n "$ZMAP_BIN" ]
-    then
-        otterbin="$ZMAP_BIN:$otterbin"
-    fi
+    otterbin="$ZMAP_BIN:$otterbin"
+    echo "  Hacked otterbin for ZMAP_BIN=$ZMAP_BIN" >&2
 fi
 
 if [ -n "$PATH" ]
@@ -73,12 +70,10 @@ $anasoft/lib:\
 $anasoft/lib/site_perl\
 "
 
-if $testing
+if [ -n "$ZMAP_LIB" ]
 then
-    if [ -n "$ZMAP_LIB" ]
-    then
-        PERL5LIB="$ZMAP_LIB:$ZMAP_LIB/site_lib:$PERL5LIB"
-    fi
+    PERL5LIB="$ZMAP_LIB:$ZMAP_LIB/site_lib:$PERL5LIB"
+    echo "  Hacked PERL5LIB for ZMAP_LIB=$ZMAP_LIB" >&2
 fi
 
 export PERL5LIB
