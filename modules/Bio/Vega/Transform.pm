@@ -180,15 +180,14 @@ sub handle_end {
         # We save it under its tag (the key) in the current context.
         my $context = $tag_stack{$self}[0];
         $str =~ s/(^\s+|\s+$)//g;
-        # warn "Setting '$element' to '$str'\n";
-        my $data = $object_data{$self}{$context};
+        # warn "Setting '$element' in '$context' to '$str'\n";
         if ($is_multiple{$self}{$context}{$element}) {
             # Tag can occur multiple times, so we save it in an array.
-            my $list = $data->{$element} ||= [];
+            my $list = $object_data{$self}{$context}{$element} ||= [];
             push(@$list, $str);
         } else {
             # Tag should only occur once, so check that it does not already have a value.
-            if (defined( my $value = $data->{$element} )) {
+            if (defined( my $value = $object_data{$self}{$context}{$element} )) {
                 # xpcroak method on Expat object gives
                 # some context in the XML.
                 $expat->xpcroak("Setting '$element' in '$context' to '$str' but already set to '$value'");
