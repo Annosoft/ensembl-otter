@@ -610,7 +610,7 @@ sub store {
           : 'DELETED';
 
         if ($gene_state eq 'UNCHANGED') {    # just leave as soon as possible
-            printf STDERR $log_pattern, $gene_state, $gene->stable_id, $gene->version;
+            printf STDERR $log_pattern, $gene_state, $db_gene->stable_id, $db_gene->version;
             return 0;
         }
 
