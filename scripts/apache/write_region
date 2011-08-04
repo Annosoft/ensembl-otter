@@ -110,12 +110,12 @@ sub write_region {
 
         ## strip_incomplete_genes for the xml genes
         my $xml_genes = $parser->get_Genes;
-        strip_incomplete_genes($odba, $server, $xml_genes);
+        strip_incomplete_genes($odba, $xml_genes);
 
         ##fetch database genes and compare to find the new/modified/deleted genes
         warn "Fetching database genes for comparison...\n";
         my $db_genes = $db_slice->get_all_Genes || [];
-        strip_incomplete_genes($odba, $server, $db_genes);
+        strip_incomplete_genes($odba, $db_genes);
         warn "Comparing " . scalar(@$db_genes) . " old to " . scalar(@$xml_genes) . " new gene(s)...\n";
 
         my $gene_adaptor = $odba->get_GeneAdaptor;
@@ -238,16 +238,13 @@ sub insert_ContigInfo_Attributes {
 }
 
 sub strip_incomplete_genes {
-    my ($odba, $server, $gene_list) = @_;
-    my $truncated_flag;
+    my ($odba, $gene_list) = @_;
+
     for (my $i = 0 ; $i < @$gene_list ;) {
         my $gene = $gene_list->[$i];
-        my $gene_name;
-        $truncated_flag = $gene->truncated_flag;
-        my $gene_name_att = $gene->get_all_Attributes('name');
-        $gene_name = $gene_name_att->[0]->value;
-        if ($truncated_flag) {
-            warn "Splicing out incomplete gene $gene_name\n";
+        if ($gene->truncated_flag) {
+            my $gene_name = $gene->get_all_Attributes('name')->[0]->value;
+            warn "Splicing out incomplete gene '$gene_name'\n";
             splice(@$gene_list, $i, 1);
             next;
         } else {
