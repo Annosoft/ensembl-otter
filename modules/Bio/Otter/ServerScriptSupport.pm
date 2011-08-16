@@ -146,7 +146,7 @@ sub allowed_datasets {
 sub dataset_filter {
     my ($self) = @_;
 
-    my $user = $self->authorized_user;
+    my $user = lc $self->sangerweb->username;
     my $user_is_external = ! ( $self->local_user || $self->internal_user );
     my $user_datasets = $self->users_hash->{$user};
 
