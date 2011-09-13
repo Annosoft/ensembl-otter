@@ -7,7 +7,7 @@
 use strict;
 use warnings;
 
-use SangerPaths qw{ core bioperl123 ensembl62 otter56 };
+use SangerPaths qw{ core bioperl123 ensembl63 otter56 };
 
 use Bio::Otter::ServerScriptSupport;
 use Bio::Vega::Transform::XML;
