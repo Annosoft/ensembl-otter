@@ -1,4 +1,4 @@
-DEVELOPMENT
+RELEASE: 0-1-136
 
 # This defines which ZMap version to use.  The install script copies
 # ZMap and AceDB binaries from the ZMap build tree into the
