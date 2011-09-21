@@ -133,28 +133,24 @@ sub _add_zmap_bam_config {
         # coverage columns and featuresets
         my $coverage_column = $bam->parent_column;
         my $coverage_featureset = $bam->parent_featureset;
+        next unless $coverage_column && $coverage_featureset;
         $column_featureset_hash->{$coverage_column}{$coverage_featureset}++;
-        $config->{'featureset-style'}{$coverage_featureset} = 'heatmap';
-
-        # virtual coverage featuresets
-        my $coverage_plus_featureset  = "${bam_column}_coverage_plus";
-        my $coverage_minus_featureset = "${bam_column}_coverage_minus";
-        my @coverage_featuresets =
-            ( $coverage_plus_featureset, $coverage_minus_featureset );
-        push @{$config->{featuresets}{$coverage_featureset}}, @coverage_featuresets;
-        push @{$config->{ZMap}{sources}}, @coverage_featuresets;
 
         # related columns
         my $related_column = "${coverage_featureset}_reads";
         my $related_featureset = $bam->name;
         $column_featureset_hash->{$related_column}{$related_featureset}++;
-        $config->{'featureset-related'}{$coverage_featureset} = $related_column;
 
         for (
-            [ $coverage_plus_featureset,  $bam->coverage_plus,   1 ],
-            [ $coverage_minus_featureset, $bam->coverage_minus, -1 ],
+            [ "${bam_column}_coverage_plus",  $bam->coverage_plus,   1 ],
+            [ "${bam_column}_coverage_minus", $bam->coverage_minus, -1 ],
             ) {
             my ( $featureset, $file, $strand ) = @{$_};
+            next unless $file;
+            push @{$config->{ZMap}{sources}}, $featureset;
+            push @{$config->{featuresets}{$coverage_featureset}}, $featureset;
+            $config->{'featureset-style'}{$coverage_featureset} = 'heatmap';
+            $config->{'featureset-related'}{$coverage_featureset} = $related_column;
             $config->{'featureset-style'}{$featureset} = 'heatmap';
             $config->{'featureset-related'}{$featureset} = $related_column;
             my $query = {
