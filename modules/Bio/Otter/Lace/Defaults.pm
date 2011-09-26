@@ -228,7 +228,7 @@ sub config_value_list {
 
 sub _config_value_list_ini_keys_name {
     my ( $ini, $keys, $name ) = @_;
-    return map { _config_value_list_ini_key_name($ini, $_, $name); } $keys;
+    return map { _config_value_list_ini_key_name($ini, $_, $name); } @{$keys};
 }
 
 sub _config_value_list_ini_key_name {
