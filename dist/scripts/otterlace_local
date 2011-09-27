@@ -12,7 +12,7 @@ fi
 
 http_proxy=http://webcache.sanger.ac.uk:3128
 export http_proxy
-no_proxy=localhost
+no_proxy=.sanger.ac.uk,localhost
 export no_proxy
 
 anasoft="/software/anacode"
