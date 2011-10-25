@@ -3,10 +3,20 @@
 # Wrapper script to choose "otter" for the distro,
 # then run otterlace inside.
 #
-# Symlink it as any of otterlace_{live,dev,test}
+# Symlink it as any of
+#   otterlace_{live,dev,test}
+#   otterlace
+#   test_otterlace
+#
 # where you would otherwise symlink directly to ../otter/otter_$TRACK/bin/otterlace
 
-track="$( basename $0 | cut -d_ -f2 )"
+case "$( basename $0 )" in
+    otterlace) track=live ;;
+    otterlace_*) track="$( basename $0 | cut -d_ -f2 )" ;;
+    *_otterlace) track="$( basename $0 | cut -d_ -f1 )" ;;
+    *) track=unknown ;;
+esac
+
 codename="$( lsb_release -sc )"
 otter_home="/software/anacode/otter/otter_$track-$codename"
 
