@@ -1178,8 +1178,13 @@ sub sessions_needing_recovery {
 
         my $ace_wrm = "$lace_dir/database/ACEDB.wrm";
         if (-e $ace_wrm) {
-            my $name = $self->get_name($lace_dir);
-            push(@$to_recover, [$lace_dir, $mtime, $name]);
+            if (my $name = $self->get_name($lace_dir)) {
+                push(@$to_recover, [$lace_dir, $mtime, $name]);                
+            }
+            else {
+                my $done = $self->move_to_done($lace_dir);
+                die "Session with uninitialised or corrupted SQLite DB renamed to '$done'";
+            }
         } else {
             eval {
                 # Attempt to release locks of uninitialised sessions
@@ -1194,8 +1199,8 @@ sub sessions_needing_recovery {
             } or warn "error while recoving session '$lace_dir': $@";
             if (-d $lace_dir) {
                 # Belt and braces - if the session was unrecoverable we want it to be deleted.
-                print STDERR "\nNo such file: '$lace_dir/database/ACEDB.wrm'\nDeleting uninitialized database '$lace_dir'\n";
-                remove_tree($lace_dir);
+                my $done = $self->move_to_done($lace_dir);
+                die "\nNo such file: '$lace_dir/database/ACEDB.wrm'\nDatabase moved to '$done'\n";
             }
         }
     }
@@ -1206,18 +1211,19 @@ sub sessions_needing_recovery {
     return $to_recover;
 }
 
+sub move_to_done {
+    my ($self, $lace_dir) = @_;
+
+    my $done = "$lace_dir.done";
+    rename($lace_dir, $done) or die "Error renaming '$lace_dir' to '$done'; $!";
+    return $done;
+}
+
 sub get_name {
     my ($self, $home_dir) = @_;
 
     my $db = Bio::Otter::Lace::DB->new($home_dir);
-    my $name = $db->get_tag_value('name');
-
-    if ($name) {
-        return $name;
-    } else {
-        die "Failed to fetch AceDatabase name from SQLite DB in '$home_dir'";
-    }
-
+    return $db->get_tag_value('name');
 }
 
 sub recover_session {
