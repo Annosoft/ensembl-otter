@@ -124,11 +124,12 @@ sub _add_zmap_bam_config {
     # same parent_column or parent_featureset
 
     my $column_featureset_hash = { };
+    my $featureset_featureset_hash = { };
 
     for my $bam ( @{$self->bam_list} ) {
-        my $bam_column = $bam->name;
+        my $bam_featureset = $bam->name;
 
-        push @{$config->{ZMap}{'seq-data'}}, $bam_column;
+        push @{$config->{ZMap}{'seq-data'}}, $bam_featureset;
 
         # coverage columns and featuresets
         my $coverage_column = $bam->parent_column;
@@ -138,12 +139,14 @@ sub _add_zmap_bam_config {
 
         # related columns
         my $related_column = "${coverage_featureset}_reads";
-        my $related_featureset = $bam->name;
+        my $related_featureset = "${related_column}_features";
+        push @{$config->{ZMap}{'seq-data'}}, $related_featureset;
         $column_featureset_hash->{$related_column}{$related_featureset}++;
+        $featureset_featureset_hash->{$related_featureset}{$bam_featureset}++;
 
         for (
-            [ "${bam_column}_coverage_plus",  $bam->coverage_plus,   1 ],
-            [ "${bam_column}_coverage_minus", $bam->coverage_minus, -1 ],
+            [ "${bam_featureset}_coverage_plus",  $bam->coverage_plus,   1 ],
+            [ "${bam_featureset}_coverage_minus", $bam->coverage_minus, -1 ],
             ) {
             my ( $featureset, $file, $strand ) = @{$_};
             next unless $file;
@@ -181,6 +184,9 @@ sub _add_zmap_bam_config {
     $config->{columns}{$_} =
         [ sort keys %{$column_featureset_hash->{$_}} ]
         for @columns;
+    $config->{featuresets}{$_} =
+        [ sort keys %{$featureset_featureset_hash->{$_}} ]
+        for keys %{$featureset_featureset_hash};
 
     return;
 }
