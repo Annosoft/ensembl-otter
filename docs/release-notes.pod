@@ -1,0 +1,47 @@
+=head1 Otterlace 58
+
+The primary aim of this release was to support Ubuntu "Lucid Lynx" on
+internal Linux workstations, in addition to keeping support for the
+older Debian "Lenny".
+
+=head2 Changes
+
+More details, including the corresponding changes in ZMap, are listed
+internally at
+L<http://mediawiki.internal.sanger.ac.uk/wiki/index.php/Otterlace_zmap_new_features>
+
+=over 4
+
+=item *
+
+BAM data fixes
+
+=over 4
+
+=item -
+
+bugfix for coverage (RT#232833)
+
+=item -
+
+provide style for short-reads (#235499)
+
+=back
+
+=item *
+
+Read-only access is no longer recorded with the session directory name
+in the ".ro" suffix.
+
+=item *
+
+Feature which have no display_id in the database should now display in
+ZMap under the logic name.
+This should fix problems with the Eponine track.
+
+=item *
+
+Bugfix for uninitialised or corrupted SQLite DB during session
+recovery.
+
+=back
