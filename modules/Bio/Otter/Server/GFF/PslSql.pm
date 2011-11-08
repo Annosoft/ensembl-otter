@@ -10,7 +10,8 @@ Readonly my $INTRON_MIN => 30;
 
 use base qw( Bio::Otter::Server::GFF );
 
-use Bio::EnsEMBL::DnaDnaAlignFeature;
+use Bio::Vega::DnaDnaAlignFeature;
+use Bio::Vega::HitDescription;
 
 # NOT a method - but probably should be, of a PSL utility class
 #
@@ -189,11 +190,17 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_psl_sql {
     my $rows = 0;
 
     while (my $psl_row = $sth->fetchrow_hashref) {
+        
 
         ++$rows;
         my @features   = _psl_split_gapped_feature($psl_row);
         my $score      = _psl_score($psl_row);
         my $percent_id = _psl_percent_id($psl_row);
+
+        my $hit_desc = Bio::Vega::HitDescription->new(
+            -HIT_NAME   => $psl_row->{qName},
+            -HIT_LENGTH => $psl_row->{qSize},
+            );
 
         foreach my $f (@features) {
 
@@ -201,13 +208,14 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_psl_sql {
             next if $f->{t_end}   < $chr_start;
             next if $f->{t_start} > $chr_end;
 
-            my $daf = Bio::EnsEMBL::DnaDnaAlignFeature->new_fast({});
+            my $daf = Bio::Vega::DnaDnaAlignFeature->new_fast({});
+            $daf->{'_hit_description'} = $hit_desc;
 
             $daf->slice(   $slice );
 
             # Set feature start and end to start and end of segment if it extends beyond
-            $daf->start( $f->{t_start} < $chr_start ? 1        : $f->{t_start} - $chr_start + 1 );
-            $daf->end(   $f->{t_end}   > $chr_end   ? $chr_end : $f->{t_end}   - $chr_start + 1 );
+            $daf->start( $f->{t_start} );
+            $daf->end(   $f->{t_end}   );
             $daf->strand( $psl_row->{strand} =~ /^-/ ? -1 : 1 );
 
             $daf->hstart(       $f->{q_start}     );
@@ -217,9 +225,9 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_psl_sql {
 
             # Reverse cigar string if -ve strand hit
             my $cigar = $f->{cigar};
-            if ( $psl_row->{strand} =~ /^-/ ) {
-                $cigar = join('', reverse($cigar =~ /(\d*[A-Za-z])/g));
-            }
+            # if ( $psl_row->{strand} =~ /^-/ ) {
+            #     $cigar = join('', reverse($cigar =~ /(\d*[A-Za-z])/g));
+            # }
             $daf->cigar_string( $cigar            );
 
             $daf->score(        $score            );
@@ -254,14 +262,14 @@ sub get_requested_features {
     my $chr_prefix = $self->param('chr_prefix');
     $chr_name = "${chr_prefix}${chr_name}" if defined $chr_prefix;
 
-    warn(sprintf("Connecting to '%s' %s %s, table %s\n",
-                 $db_dsn,
-                 $db_user ? "as '${db_user}'" : "[no user]",
-                 $db_pass ? "with pw"         : "[no pw]",
-                 $db_table)
-        );
+    my $connecting = sprintf("connecting to '%s' %s %s, table %s\n",
+        $db_dsn,
+        $db_user ? "as '${db_user}'" : "[no user]",
+        $db_pass ? "with pw"         : "[no pw]",
+        $db_table);
 
-    my $dbh = DBI->connect($db_dsn, $db_user, $db_pass);
+    my $dbh = DBI->connect($db_dsn, $db_user, $db_pass, {RaiseError => 1})
+        or die "Error $connecting";
     my $sth = $dbh->prepare(qq{
     SELECT
         matches,
