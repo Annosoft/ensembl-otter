@@ -18,11 +18,11 @@ BAM data fixes
 
 =over 4
 
-=item -
+=item *
 
 bugfix for coverage (RT#232833)
 
-=item -
+=item *
 
 provide style for short-reads (#235499)
 
