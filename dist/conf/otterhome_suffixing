@@ -1,0 +1,13 @@
+distro
+
+
+Controls suffixing of Otter release directory name during build.
+Override by passing $otter_suffix in environment.
+
+ arch   : suffix with "-$( uname -m )"
+ distro : suffix with "-$( lsb_release -sc )"
+
+Matches are detected with Bash =~ operator, without word boundaries,
+and applied in the order specified in the build system.
+
+See otter_ipath_get in _otterlace.sh shared functions.
