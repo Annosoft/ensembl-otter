@@ -1,0 +1,6 @@
+
+
+-distro and -arch suffixes are not unsed until v58
+
+Although the build system supports them (and requires them unless the
+override is given) the otterlace script will not work with suffixes.
