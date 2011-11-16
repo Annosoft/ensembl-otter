@@ -39,7 +39,7 @@ sub _group_by_method_name { ## no critic(Subroutines::RequireArgUnpacking)
 sub _featureset_xml {
     my ($featureset_list, $offset) = @_;
     $featureset_list ||= [ ];
-    return [ map { $_->zmap_xml_feature_tag($offset) => 1 } @{$featureset_list} ];
+    return [ map { $_->zmap_xml_feature_tag($offset) } @{$featureset_list} ];
 }
 
 sub _request_xml {
