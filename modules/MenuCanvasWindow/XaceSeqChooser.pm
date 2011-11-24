@@ -942,6 +942,8 @@ sub save_data {
         $self->flag_db_edits(0);    # or the save_ace() will set unsaved_changes back to "1"
         $self->save_ace($ace_data);
         $self->flag_db_edits(1);
+        $self->resync_with_db;
+        $self->update_window_title_unsaved_flag(0);
     };
     my $err = $@;
 
