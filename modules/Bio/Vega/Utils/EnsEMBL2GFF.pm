@@ -849,7 +849,9 @@ use Bio::Vega::Utils::GFF;
         my $hd = $self->get_HitDescription;
         $gff->{'attributes'}{'Length'}   = $hd->hit_length;
         $gff->{'attributes'}{'Taxon_ID'} = $hd->taxon_id;
-        $gff->{'attributes'}{'DB_Name'}  = sprintf(q{"%s"}, $hd->db_name);
+        if (my $db_name = $hd->db_name) {
+            $gff->{'attributes'}{'DB_Name'} = qq{"$db_name"};
+        }
         if (my $desc = $hd->description) {
             $desc =~ s/"/\\"/g;
             $gff->{'attributes'}{'Description'} = qq{"$desc"};
@@ -870,7 +872,9 @@ use Bio::Vega::Utils::GFF;
         my $hd = $self->get_HitDescription;
         $gff->{'attributes'}{'Length'}   = $hd->hit_length;
         $gff->{'attributes'}{'Taxon_ID'} = $hd->taxon_id;
-        $gff->{'attributes'}{'DB_Name'}  = sprintf(q{"%s"}, $hd->db_name);
+        if (my $db_name = $hd->db_name) {
+            $gff->{'attributes'}{'DB_Name'} = qq{"$db_name"};
+        }
         if (my $desc = $hd->description) {
             $desc =~ s/"/\\"/g;
             $gff->{'attributes'}{'Description'} = qq{"$desc"};

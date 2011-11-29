@@ -135,6 +135,7 @@ sub _psl_split_gapped_feature {
 
         my $t_intron_len = $this->{t_start} - $prev->{t_end} - 1;
 
+        # Don't understand why we need all of these conditions
         if (    $t_intron_len < $INTRON_MIN
                 and $q_intron_len < $INTRON_MIN
                 and ($t_intron_len == 0 or $q_intron_len == 0 or $t_intron_len == $q_intron_len)
@@ -190,7 +191,6 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_psl_sql {
     my $rows = 0;
 
     while (my $psl_row = $sth->fetchrow_hashref) {
-        
 
         ++$rows;
         my @features   = _psl_split_gapped_feature($psl_row);
@@ -204,30 +204,30 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_psl_sql {
 
         foreach my $f (@features) {
 
-            # Skip components which extend beyond segment?? TRY BOTH WAYS
-            next if $f->{t_end}   < $chr_start;
-            next if $f->{t_start} > $chr_end;
+            # Skip components which extend beyond segment.
+            # (We could truncate align features if we could
+            # correctly cut cigar strings etc...)
+            next if $f->{t_start} < $chr_start;
+            next if $f->{t_end}   > $chr_end;
 
             my $daf = Bio::Vega::DnaDnaAlignFeature->new_fast({});
             $daf->{'_hit_description'} = $hit_desc;
 
             $daf->slice(   $slice );
 
-            # Set feature start and end to start and end of segment if it extends beyond
-            $daf->start( $f->{t_start} );
-            $daf->end(   $f->{t_end}   );
+            $daf->start( $f->{t_start} - $chr_start + 1 );
+            $daf->end(   $f->{t_end}   - $chr_start + 1 );
             $daf->strand( $psl_row->{strand} =~ /^-/ ? -1 : 1 );
 
-            $daf->hstart(       $f->{q_start}     );
-            $daf->hend(         $f->{q_end}       );
-            $daf->hstrand(      1                 );
-            $daf->hseqname(     $psl_row->{qName} );
+            $daf->hstart(   $f->{q_start} );
+            $daf->hend(     $f->{q_end}    );
+            $daf->hstrand(  1                 );
+            $daf->hseqname( $psl_row->{qName} );
 
-            # Reverse cigar string if -ve strand hit
             my $cigar = $f->{cigar};
-            # if ( $psl_row->{strand} =~ /^-/ ) {
-            #     $cigar = join('', reverse($cigar =~ /(\d*[A-Za-z])/g));
-            # }
+            if ( $psl_row->{strand} =~ /^-/ ) {
+                $cigar = join('', reverse($cigar =~ /(\d*[A-Za-z])/g));
+            }
             $daf->cigar_string( $cigar            );
 
             $daf->score(        $score            );
