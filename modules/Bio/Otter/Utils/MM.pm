@@ -125,6 +125,9 @@ sub dbh {
 }
 
 {
+    # May be dangerous to assume that the most recent entries in uniprot_archive
+    # will have the biggest entry_id
+
     my $common_sql = q{
 SELECT e.molecule_type
   , e.data_class
@@ -132,19 +135,29 @@ SELECT e.molecule_type
   , e.sequence_length
   , GROUP_CONCAT(t.ncbi_tax_id) as taxon_list
   , d.description
+%s
+WHERE e.accession_version %s
+GROUP BY e.entry_id
+ORDER BY e.entry_id ASC
+};
+
+    my $join_sql = q{
 FROM entry e
-  , description d
-  , taxonomy t
-WHERE e.entry_id = d.entry_id
-  AND e.entry_id = t.entry_id
-  AND e.accession_version };
-    
-    # May be dangerous to assume that the most recent entries in uniprot_archive
-    # will have the biggest entry_id
-    my $group_order_sql = q{ GROUP BY e.entry_id ORDER BY e.entry_id ASC };
-    
-    my $with_sv_sql = "$common_sql    = ?\n$group_order_sql";
-    my $like_sv_sql = "$common_sql LIKE ?\n$group_order_sql";
+JOIN description d ON e.entry_id = d.entry_id
+JOIN taxonomy    t ON e.entry_id = t.entry_id };
+
+    my $with_sv_sql = sprintf( $common_sql, $join_sql, ' = ?' );
+    my $like_sv_sql = sprintf( $common_sql, $join_sql, ' LIKE ?' );
+
+    # For uniprot_archive, we need to use the isoform table for splice variants
+    my $join_iso_sql = q{
+FROM entry e
+JOIN description d ON e.entry_id = d.entry_id
+JOIN isoform     i ON e.entry_id = i.isoform_entry_id
+JOIN taxonomy    t ON i.parent_entry_id = t.entry_id };
+
+    my $with_sv_iso_sql = sprintf( $common_sql, $join_iso_sql, ' = ?' );
+    my $like_sv_iso_sql = sprintf( $common_sql, $join_iso_sql, ' LIKE ?' );
 
     sub get_accession_types {
         my ($self, $accs) = @_;
@@ -157,10 +170,25 @@ WHERE e.entry_id = d.entry_id
             my $with_sv_sth = $dbh->prepare($with_sv_sql);
             my $like_sv_sth = $dbh->prepare($like_sv_sql);
 
+            my $is_uniprot_archive = ($db_name eq 'uniprot_archive');
+            my ($with_sv_iso_sth, $like_sv_iso_sth);
+            if ($is_uniprot_archive) {
+                $with_sv_iso_sth = $dbh->prepare($with_sv_iso_sql);
+                $like_sv_iso_sth = $dbh->prepare($like_sv_iso_sql);
+            }
+
             foreach my $name (keys %acc_hash) {
 
                 my $sth;
-                if ($name =~ /\.\d+$/) {
+                if ($is_uniprot_archive and $name =~ /-\d+\.\d+$/) {
+                    $with_sv_iso_sth->execute($name);
+                    $sth = $with_sv_iso_sth;
+                }
+                elsif ($is_uniprot_archive and $name =~ /-\d+$/) {
+                    $like_sv_iso_sth->execute("$name.%");
+                    $sth = $like_sv_iso_sth;
+                }
+                elsif ($name =~ /\.\d+$/) {
                     $with_sv_sth->execute($name);
                     $sth = $with_sv_sth;
                 }
