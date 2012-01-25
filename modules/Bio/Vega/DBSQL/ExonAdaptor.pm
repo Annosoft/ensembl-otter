@@ -44,7 +44,7 @@ sub fetch_by_stable_id_version {
 
   my ($self, $stable_id, $version) = @_;
 
-  my $constraint = "esi.stable_id = '$stable_id' AND esi.version = $version ORDER BY esi.modified_date DESC, esi.exon_id DESC LIMIT 1";
+  my $constraint = "e.stable_id = '$stable_id' AND e.version = $version ORDER BY e.modified_date DESC, e.exon_id DESC LIMIT 1";
   my ($exon) = @{ $self->generic_fetch($constraint) };
 
   return $exon;
@@ -53,7 +53,7 @@ sub fetch_by_stable_id_version {
 sub fetch_latest_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "esi.stable_id = '$stable_id' ORDER BY e.is_current DESC, esi.modified_date DESC, esi.exon_id DESC LIMIT 1";
+  my $constraint = "e.stable_id = '$stable_id' ORDER BY e.is_current DESC, e.modified_date DESC, e.exon_id DESC LIMIT 1";
   my ($exon) = @{ $self->generic_fetch($constraint) };
 
   return $exon;
