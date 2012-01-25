@@ -457,7 +457,6 @@ sub Bio::EnsEMBL::Gene::propagate_slice {
     my ($gene, $slice) = @_;
 
     foreach my $transcript (@{ $gene->get_all_Transcripts }) {
-        $transcript->slice($slice);
 
         # We don't call get_all_Exons on the gene because sometimes each
         # transcript has its own copy of each exon (ie: same dbID, but not
@@ -465,6 +464,10 @@ sub Bio::EnsEMBL::Gene::propagate_slice {
         foreach my $exon (@{ $transcript->get_all_Exons }) {
             $exon->slice($slice);
         }
+
+        # This call has to come after get_all_Exons, or the transcript
+        # may attempt to lazy-load exons from the Otter database.
+        $transcript->slice($slice);
     }
     $gene->slice($slice);
 
