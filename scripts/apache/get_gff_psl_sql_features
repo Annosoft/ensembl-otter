@@ -7,7 +7,7 @@
 use strict;
 use warnings;
 
-use SangerPaths qw{ core bioperl123 ensembl64 otter59 };
+use SangerPaths qw{ core bioperl123 ensembl65 otter59 };
 
 use Bio::Otter::Server::GFF::PslSql;
 
