@@ -602,18 +602,27 @@ sub general_http_dialog {
     my $password_attempts = $self->password_attempts;
     my $response;
 
-    while ($password_attempts) {
+    REQUEST: while (1) {
         $response = $self->do_http_request($method, $scriptname, $params);
-        last if $response->is_success;
+        if ($response->is_success) {
+            last REQUEST;
+        }
         my $code = $response->code;
         if ($code == 401 || $code == 403) {
+            # 401 = unauthorized
+            # 403 = forbidden
             # we should see 401 but the server still incorrectly returns 403
-            # unauthorized
-            $self->authorize;
-            $password_attempts--;
+            while ($password_attempts) {
+                $password_attempts--;
+                # Try the request again if we manage to authorize
+                if ($self->authorize) {
+                    next REQUEST;
+                }
+            }
+            die "Authorization failed";
         } else {
-	    print STDERR "\nGot error $code\n";
-	    print STDERR __truncdent_for_log($response->decoded_content, 10240, '| ');
+            print STDERR "\nGot error $code\n";
+            print STDERR __truncdent_for_log($response->decoded_content, 10240, '| ');
             die sprintf "%d (%s)", $response->code, $response->decoded_content;
         }
     }
