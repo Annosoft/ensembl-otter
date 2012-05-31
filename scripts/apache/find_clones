@@ -7,7 +7,7 @@
 use strict;
 use warnings;
 
-use SangerPaths qw{ core bioperl123 ensembl64 otter64 };
+use SangerPaths qw{ core bioperl123 ensembl65 otter64 };
 
 use Bio::Otter::ServerScriptSupport;
 use Bio::Vega::CloneFinder;
