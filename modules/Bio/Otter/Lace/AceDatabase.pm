@@ -218,8 +218,6 @@ sub empty_acefile_list {
 sub init_AceDatabase {
     my ($self) = @_;
 
-    $self->add_misc_acefile;
-
     my $xml_string = $self->http_response_content(
         'GET', 'get_region');
     $self->write_file('01_before.xml', $xml_string);
@@ -869,15 +867,6 @@ sub make_passwd_wrm {
 
     close $fh;    # Must close to ensure buffer is flushed into file
 
-    return;
-}
-
-sub add_misc_acefile {
-    my ($self) = @_;
-    my $file = $self->Client->config_value('misc_acefile');
-    return unless $file;
-    confess "No such file '$file'" unless -e $file;
-    $self->add_acefile($file);
     return;
 }
 
