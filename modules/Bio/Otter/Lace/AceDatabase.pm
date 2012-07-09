@@ -175,18 +175,24 @@ sub post_exit_callback {
 
 sub MethodCollection {
     my ($self) = @_;
-
-    my $collect = $self->{'_MethodCollection'} ||= $self->get_default_MethodCollection;
-    return $collect;
+    return $self->{'_MethodCollection'} ||=
+        _MethodCollection($self->Client);
 }
 
-sub get_default_MethodCollection {
-    my ($self) = @_;
+# not a method, possibly belongs elsewhere
+sub _MethodCollection {
+    my ($client) = @_;
 
-    my $styles_collection = Hum::ZMapStyleCollection->new_from_string($self->Client->get_otter_styles);
-    my $collect = Hum::Ace::MethodCollection->new_from_string($self->Client->get_methods_ace, $styles_collection);
-    $collect->process_for_otterlace;
-    return $collect;
+    my $otter_styles = $client->get_otter_styles;
+    my $style_collection =
+        Hum::ZMapStyleCollection->new_from_string($otter_styles);
+
+    my $methods_ace = $client->get_methods_ace;
+    my $method_collection =
+        Hum::Ace::MethodCollection->new_from_string($methods_ace, $style_collection);
+    $method_collection->process_for_otterlace;
+
+    return $method_collection;
 }
 
 sub add_acefile {
