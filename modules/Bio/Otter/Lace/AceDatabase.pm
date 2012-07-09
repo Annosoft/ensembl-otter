@@ -712,18 +712,6 @@ sub offset {
     return $offset;
 }
 
-sub save_ace_to_otter {
-    my ($self) = @_;
-
-    my $client = $self->Client or confess "No Client attached";
-    my $xml = $client->save_otter_xml($self->generate_XML_from_acedb, $self->smart_slice->dsname);
-    return unless $xml;
-
-    my $parser = Bio::Vega::Transform::Otter::Ace->new;
-    $parser->parse($xml);
-    return $parser->make_ace_genes_transcripts;
-}
-
 sub generate_XML_from_acedb {
     my ($self) = @_;
 
