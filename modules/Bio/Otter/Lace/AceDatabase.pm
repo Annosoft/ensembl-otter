@@ -10,6 +10,7 @@ use Carp;
 use Fcntl qw{ O_WRONLY O_CREAT };
 use Config::IniFiles;
 use POSIX();
+use Try::Tiny;
 
 use Bio::Vega::Transform::Otter::Ace;
 use Bio::Vega::AceConverter;
@@ -796,16 +797,15 @@ sub make_database_directory {
     mkdir($home, 0777) or die "Can't mkdir('$home') : $!\n";
 
     my $tar_command = "cd '$home' && tar xzf -";
-    unless (
-        eval {
-            open my $expand, '|-', $tar_command or die "Can't open pipe '$tar_command'; $?";
-            print $expand $tar;
-            close $expand or die "Error running pipe '$tar_command'; $?";
-            1;
-        }) {
-        $self->error_flag(1);
-        confess $@;
+    try {
+        open my $expand, '|-', $tar_command or die "Can't open pipe '$tar_command'; $?";
+        print $expand $tar;
+        close $expand or die "Error running pipe '$tar_command'; $?";
     }
+    catch {
+        $self->error_flag(1);
+        confess $::_;
+    };
 
     # rawdata used to be in tar file, but no longer because
     # it doesn't (yet) contain any files.
@@ -1151,21 +1151,18 @@ sub DESTROY {
         return;
     }
     my $client = $self->Client;
-    if (
-        eval {
-            if ($self->ace_server_registered) {
-                $self->ace_server->kill_server;
-            }
-            if ($client) {
-                $self->unlock_otter_slice() if $self->write_access;
-            }
-            1;
-        }) {
-        rename($home, "${home}.done")
-            or die "Error renaming the session directory; $!";
-    } else {
-        warn "Error in AceDatabase::DESTROY : $@";
+    try {
+        if ($self->ace_server_registered) {
+            $self->ace_server->kill_server;
+        }
+        if ($client) {
+            $self->unlock_otter_slice() if $self->write_access;
+        }
     }
+    catch { warn "Error in AceDatabase::DESTROY : $::_"; };
+
+    rename($home, "${home}.done")
+        or die "Error renaming the session directory; $!";
 
     if ($callback) {
         $callback->();
