@@ -8,6 +8,7 @@ use warnings;
 use Carp;
 use Scalar::Util 'weaken';
 use URI::Escape qw( uri_escape );
+use Try::Tiny;
 
 use Bio::Otter::Filter;
 use Bio::Otter::BAM;
@@ -272,8 +273,8 @@ sub _bam_load {
     my $bam_by_name = $self->{_bam_by_name} = { };
     for my $name ( @{$self->config_keys("bam")} ) {
         my $config = $self->config_section("bam.${name}");
-        eval { $bam_by_name->{$name} = Bio::Otter::BAM->new($name, $config); 1; } or
-            warn sprintf "BAM section for ${name}: ignored: $@";
+        try { $bam_by_name->{$name} = Bio::Otter::BAM->new($name, $config); }
+        catch { warn sprintf "BAM section for ${name}: ignored: $::_"; };
     }
 
     my $config = $self->config_section('bam_list');
@@ -300,13 +301,12 @@ sub _filter_load {
     my $filter_by_name = $self->{_filter_by_name} = { };
     for my $name ( @{$self->config_keys("filter")} ) {
         my $config = $self->config_section("filter.${name}");
-        eval {
+        try {
             my $filter= Bio::Otter::Filter->from_config($config);
             $filter->name($name);
             $filter_by_name->{$name} = $filter;
-            1;
         }
-        or warn sprintf "filter section for ${name}: ignored: $@";
+        catch { warn sprintf "filter section for ${name}: ignored: $::_"; };
     }
 
     my $filters = $self->{_filters} = [ ];
