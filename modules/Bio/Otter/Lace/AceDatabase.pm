@@ -589,7 +589,7 @@ sub blixem_config {
             'user-fetch'            => [$embl_fetch, $fasta_fetch, 'internal'],
         },
 
-        'psl' => {
+        'linked-local' => {
             'link-features-by-name' => 'true',
             'bulk-fetch'            => 'none',
             'user-fetch'            => 'internal',
@@ -601,6 +601,17 @@ sub blixem_config {
             'user-fetch'            => 'variation-fetch',
         },
 
+        # Hard coded links for OTF data types.  (Would rather not have these)
+        'source-data-types' => {
+            map { lc $_ } (    # Needed until RT bug #277259 fixed
+            'Unknown_DNA'       => 'linked-local',
+            'Unknown_Protein'   => 'linked-local',
+            'OTF_EST'           => 'dna-match',
+            'OTF_ncRNA'         => 'dna-match',
+            'OTF_mRNA'          => 'dna-match',
+            'OTF_Protein'       => 'protein-match',
+            )
+        },
 
         # Fetch methods
 
