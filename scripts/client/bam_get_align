@@ -182,7 +182,7 @@ sub _print_feature {
     $cigar =~ s/\d+S//g;    # Remove BAM "S" clipping strings from CIGAR
     if ($cigar !~ /^\d+M$/) {
         # It isn't a simple match string, so we do need CIGAR
-        push(@attributes, cigar => qq{"$cigar"});
+        push(@attributes, cigar_bam => qq{"$cigar"});
     }
 
     my @attribute_strings = ();
