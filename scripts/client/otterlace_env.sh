@@ -102,11 +102,29 @@ $OTTER_HOME/ensembl/modules:\
 $OTTER_HOME/ensembl-variation/modules:\
 $OTTER_HOME/lib/perl5:\
 $OTTER_HOME/ensembl-otter/tk:\
+"
+
+osname="$( uname -s )"
+
+case "$osname" in
+    Darwin)
+        PERL5LIB="${PERL5LIB}:\
+$anasoft/lib/site_perl:\
+$anasoft/lib/perl5/site_perl:\
+$anasoft/lib/perl5/vendor_perl:\
+$anasoft/lib/perl5\
+"
+        ;;
+
+    *)
+        PERL5LIB="${PERL5LIB}:\
 $anasoft_distro/lib:\
 $anasoft_distro/lib/site_perl:\
 $anasoft/lib:\
 $anasoft/lib/site_perl\
 "
+        ;;
+esac
 
 if [ -n "$ZMAP_LIB" ]
 then
