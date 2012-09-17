@@ -30,10 +30,32 @@ sub mac_os_x_set_proxy_vars {
         or die "No ServiceOrder list in 'Network.Global.IPv4'";
     my @services;
     foreach my $key (@$ipv4_service_keys) {
-        my $link = $set->{'Network'}{'Service'}{$key}{'__LINK__'}
-            or die "No '__LINK__' node in 'Network.Service.$key'";
+        # There can be keys listed in ServiceOrder which don't have an entry
+        my $link = $set->{'Network'}{'Service'}{$key}{'__LINK__'} or next;
         my $serv = fetch_node_from_path($plist, $link);
         push(@services, $serv);
+    }
+
+    unless (@services) {
+        warn "No network services found in Mac network prefs file.  Leaving network proxy config untouched\n";
+        return;
+    }
+
+    # Find the proxy config in the first active network service
+    my $prox = {};
+    my $first_network_service_name;
+    foreach my $serv (@services) {
+        # Skip inactive network services
+        my $active = $serv->{'__INACTIVE__'} ? 0 : 1;
+        next unless $active;
+
+        $first_network_service_name = $serv->{'UserDefinedName'};
+
+        $prox = $serv->{'Proxies'} || {};
+
+        # Only take proxy config from first active service (which ought to
+        # be the one which is acutally used).
+        last;
     }
 
     # Protocol names we proxy, and the name of their environment variables.
@@ -44,42 +66,30 @@ sub mac_os_x_set_proxy_vars {
         FTP     ftp_proxy
     };
 
-    foreach my $serv (@services) {
-        my $name = $serv->{'UserDefinedName'};
-
-        # Skip inactive network services
-        my $active = $serv->{'__INACTIVE__'} ? 0 : 1;
-        next unless $active;
-
-        my $prox = $serv->{'Proxies'} || {};
-        foreach my $protocol (keys %proxy_env) {
-            my $var_name = $proxy_env{$protocol};
-            if ($prox->{"${protocol}Enable"}) {
-                # Fetch the values needed if there is an active proxy
-                my $host = $prox->{"${protocol}Proxy"}
-                    or die "No proxy host for '$protocol' protocol in '$name'";
-                my $port = $prox->{"${protocol}Port"}
-                    or die "No proxy port for '$protocol' protocol in '$name'";
-                $env_hash->{$var_name} = "http://$host:$port";
-            }
-            else {
-                # There may be proxies set from the previous network
-                # config.  We must remove them if there are.
-                delete($env_hash->{$var_name});
-            }
-        }
-
-        if (my $exc = $prox->{'ExceptionsList'}) {
-            $env_hash->{'no_proxy'} = join(',', @$exc);
+    foreach my $protocol (keys %proxy_env) {
+        my $var_name = $proxy_env{$protocol};
+        if ($prox->{"${protocol}Enable"}) {
+            # Fetch the values needed if there is an active proxy
+            my $host = $prox->{"${protocol}Proxy"}
+                or die "No proxy host for '$protocol' protocol in '$first_network_service_name'";
+            my $port = $prox->{"${protocol}Port"}
+                or die "No proxy port for '$protocol' protocol in '$first_network_service_name'";
+            $env_hash->{$var_name} = "http://$host:$port";
         }
         else {
-            delete($env_hash->{'no_proxy'});
+            # There may be proxies set from the previous network
+            # config.  We must remove them if there are.
+            delete($env_hash->{$var_name});
         }
-
-        # Only take proxy config from first active service (which ought to
-        # be the one which is acutally used).
-        last;
     }
+
+    if (my $exc = $prox->{'ExceptionsList'}) {
+        $env_hash->{'no_proxy'} = join(',', @$exc);
+    }
+    else {
+        delete($env_hash->{'no_proxy'});
+    }
+
     return;
 }
 
