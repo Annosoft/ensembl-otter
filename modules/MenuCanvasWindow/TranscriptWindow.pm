@@ -2730,7 +2730,12 @@ sub save_if_changed {
         return;
     };
 
-    return $self->save_sub($sub);
+    if ($sub) {
+        return $self->save_sub($sub);
+    }
+    else {
+        return;
+    }
 }
 
 sub save_sub {
