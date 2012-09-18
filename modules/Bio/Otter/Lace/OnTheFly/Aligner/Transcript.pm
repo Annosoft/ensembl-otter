@@ -26,8 +26,14 @@ around 'parse' => sub {
 };
 
 sub _split_alignment {
-    my ($self, $gapped_alignment) = @_;
-    return $gapped_alignment->intronify_by_transcript_exons($self->transcript)->exon_gapped_alignments;
+    my ($self, $gapped_alignments) = @_;
+    my $ga = $gapped_alignments->[0];
+
+    if (scalar(@{$gapped_alignments}) > 1) {
+        $self->log->warn(sprintf("More than one gapped alignment for '%s', using first.", $ga->query_id));
+    }
+
+    return $ga->intronify_by_transcript_exons($self->transcript)->exon_gapped_alignments;
 }
 
 1;
