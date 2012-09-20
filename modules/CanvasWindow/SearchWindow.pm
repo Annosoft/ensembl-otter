@@ -82,7 +82,13 @@ sub do_search {
         }
     }
 
-    my @qname_fail = grep { ! $result_hash->{$_} } @{$qnames};
+    my $hit_hash = { };
+    for (keys %{$result_hash}) {
+        s/^.*://; # remove any prefix
+        $hit_hash->{lc $_}++;
+    }
+
+    my @qname_fail = grep { ! $hit_hash->{lc $_} } @{$qnames};
     if (@qname_fail) {
         my $text =
             sprintf 'Nothing found for %s',
