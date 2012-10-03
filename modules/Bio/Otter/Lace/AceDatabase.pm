@@ -429,6 +429,7 @@ sub _zmap_config {
             'pfetch-mode'     => ( $pfetch_www ? 'http' : 'pipe' ),
             'pfetch'          => ( $pfetch_www ? $pfetch_url : 'pfetch' ),
             'xremote-debug'   => $ZMAP_DEBUG ? 'true' : 'false',
+            'stylesfile'      => $self->stylesfile,
             %{$self->smart_slice->zmap_config_stanza},
         },
 
