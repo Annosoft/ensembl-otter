@@ -75,7 +75,11 @@ sub _add_zmap_source_config {
         [ sort map { $_->name } @{$sources} ]
         if @${sources};
 
-    my $columns      = { };
+    my $columns      = {
+        # Hard coded to provide default styles for BAM and bigWig
+        # imported data via Zmap File menu.
+        'Short Read Data' => [qw{ BAM bigWig }],
+    };
     my $styles       = { };
     my $descriptions = { };
 
@@ -123,6 +127,11 @@ sub _add_zmap_bam_config {
 
     # must be careful here because different BAM objects may have the
     # same parent_column or parent_featureset
+
+    # Hard coded to provide default styles for BAM and bigWig
+    # imported data via Zmap File menu.
+    $config->{'featureset-style'}{'BAM'}    = 'short-read';
+    $config->{'featureset-style'}{'bigWig'} = 'short-read-coverage';
 
     my $column_featureset_hash = { };
 
