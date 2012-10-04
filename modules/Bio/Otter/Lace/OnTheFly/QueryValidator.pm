@@ -125,11 +125,11 @@ sub _build_seqs_by_type {
         {
             push @{ $seqs_by_type{ $seq->type } }, $seq;
         }
-        elsif ($seq->sequence_string =~ /^[AGCTNagctn\s]*$/) {
-            push @{ $seqs_by_type{'Unknown_DNA'} }, $seq;
+        elsif ($seq->sequence_string =~ /[^acgtrymkswhbvdnACGTRYMKSWHBVDN]/) {
+            push @{ $seqs_by_type{'Unknown_Protein'} }, $seq;
         }
         else {
-            push @{ $seqs_by_type{'Unknown_Protein'} }, $seq;
+            push @{ $seqs_by_type{'Unknown_DNA'} }, $seq;
         }
     }
 
