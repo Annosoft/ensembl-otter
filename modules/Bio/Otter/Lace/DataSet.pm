@@ -57,6 +57,16 @@ sub zmap_config {
     my $config = {
         'ZMap' => $stanza,
         'ZMapWindow' => $self->config_section('ZMapWindow'),
+
+        # BAM and bigWig imported via Zmap File menu
+        'columns' => {
+            'Short Read Data' => [qw{ BAM bigWig }],
+        },
+        'featureset-style' => {
+            'BAM'    => 'short-read',
+            'bigWig' => 'short-read-coverage',
+        },
+
     };
 
     $self->_add_zmap_source_config($config, $session);
@@ -75,14 +85,6 @@ sub _add_zmap_source_config {
         [ sort map { $_->name } @{$sources} ]
         if @${sources};
 
-    my $columns      = {
-        # Hard coded to provide default styles for BAM and bigWig
-        # imported data via Zmap File menu.
-        'Short Read Data' => [qw{ BAM bigWig }],
-    };
-    my $styles       = { };
-    my $descriptions = { };
-
     for my $source (@$sources) {
 
         $config->{$source->name} = {
@@ -93,23 +95,15 @@ sub _add_zmap_source_config {
             group       => 'always',
         };
 
-        if ($source->zmap_column) {
-            my $fsets = $columns->{$source->zmap_column} ||= [];
-            push @{ $fsets }, @{$source->featuresets};
-        }
+        my $zmap_column = $source->zmap_column;
+        push @{$config->{'columns'}{$zmap_column}}, @{$source->featuresets} if $zmap_column;
 
-        if ($source->zmap_style) {
-            $styles->{$source->name} = $source->zmap_style;
-        }
+        my $zmap_style = $source->zmap_style;
+        $config->{'featureset-style'}{$source->name} = $zmap_style if $zmap_style;
 
-        if ($source->description) {
-            $descriptions->{$source->name} = $source->description;
-        }
+        my $description = $source->description;
+        $config->{'featureset-description'}->{$source->name} = $description if $description;
     }
-
-    $config->{'columns'}                = $columns      if keys %{$columns};
-    $config->{'featureset-style'}       = $styles       if keys %{$styles};
-    $config->{'featureset-description'} = $descriptions if keys %{$descriptions};
 
     return;
 }
@@ -127,11 +121,6 @@ sub _add_zmap_bam_config {
 
     # must be careful here because different BAM objects may have the
     # same parent_column or parent_featureset
-
-    # Hard coded to provide default styles for BAM and bigWig
-    # imported data via Zmap File menu.
-    $config->{'featureset-style'}{'BAM'}    = 'short-read';
-    $config->{'featureset-style'}{'bigWig'} = 'short-read-coverage';
 
     my $column_featureset_hash = { };
 
