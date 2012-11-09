@@ -49,6 +49,9 @@ sub name {
 sub zmap_config {
     my ($self, $session) = @_;
 
+    my $ds_name = $self->name;
+    my $import_argument_string = "--dataset=${ds_name} --gff_version=2";
+
     my $stanza = { %{ $self->config_section('zmap') } };
 
     my $columns_list = $self->config_value_list_merged('zmap_config', 'columns');
@@ -65,6 +68,10 @@ sub zmap_config {
         'featureset-style' => {
             'BAM'    => 'short-read',
             'bigWig' => 'short-read-coverage',
+        },
+        'import' => {
+            'bam_get_align' => [ 'BAM',    $import_argument_string ],
+            'bigwig_get'    => [ 'bigWig', $import_argument_string ],
         },
 
     };
