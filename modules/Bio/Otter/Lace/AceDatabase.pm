@@ -1021,6 +1021,15 @@ sub save_filter_state {
     return;
 }
 
+sub delayed {
+    my ($self, $source) = @_;
+    my $filter = $self->filters->{$source->name};
+    $filter or return 1;
+    my $state = $filter->{state};
+    my $delayed = ! $state->{wanted} || $state->{failed};
+    return $delayed;
+}
+
 sub filters {
     my ($self) = @_;
 

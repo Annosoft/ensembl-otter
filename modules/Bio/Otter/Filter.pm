@@ -319,13 +319,6 @@ sub url {
     return sprintf "pipe:///%s?%s", $script, $param_string,
 }
 
-sub delayed {
-    my ($self, $session) = @_;
-    my $state = $session->filters->{$self->name}{state};
-    my $delayed = ! $state->{wanted} || $state->{failed};
-    return $delayed;
-}
-
 sub call_with_session_data_handle {
     my ($self, $session, $data_sub) = @_;
 
