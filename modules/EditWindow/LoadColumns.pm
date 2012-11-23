@@ -287,12 +287,11 @@ sub load_filters {
     } @filters;
 
     if ($self->init_flag) {
-        my $adb = $self->AceDatabase;
         # now initialise the database
-        try { $adb->init_AceDatabase; return 1; }
+        try { $self->AceDatabase->init_AceDatabase; return 1; }
         catch {
             $self->SequenceNotes->exception_message($@, "Error initialising database");
-            $adb->error_flag(0);
+            $self->AceDatabase->error_flag(0);
             $top->destroy;
             return 0;
         }
