@@ -82,6 +82,8 @@ sub featuresets {
 sub zmap_column { return; }
 sub zmap_style  { return 'short-read'; }
 
+sub process_gff_file { return 0; }
+
 sub url {
     my ($self, $session) = @_;
     my $query_string = _query_string($self->url_query($session));
