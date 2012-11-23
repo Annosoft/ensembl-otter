@@ -1043,8 +1043,18 @@ sub filters {
                     failed => 0,
                 },
             };
-        } @{$self->DataSet->filters},
+        } (
+            @{$self->DataSet->filters},
+            ( grep { _bam_is_filter($_) } @{$self->DataSet->bam_list} ),
+        )
     };
+}
+
+sub _bam_is_filter {
+    my ($bam) = @_;
+    my $bam_is_filter =
+        ! ( $_->coverage_plus || $_->coverage_minus );
+    return $bam_is_filter;
 }
 
 sub DataSet {
