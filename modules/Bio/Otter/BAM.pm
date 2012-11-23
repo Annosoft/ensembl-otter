@@ -26,6 +26,12 @@ sub new {
     return $self;
 }
 
+sub wanted {
+    my ($self, @args) = @_;
+    ($self->{_wanted}) = @args if @args;
+    return $self->{_wanted};
+}
+
 sub name {
     my ($self) = @_;
     return $self->{name};

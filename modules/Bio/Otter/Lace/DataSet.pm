@@ -274,7 +274,11 @@ sub _bam_load {
     my $bam_by_name = $self->{_bam_by_name} = { };
     for my $name ( @{$self->config_keys("bam")} ) {
         my $config = $self->config_section("bam.${name}");
-        try { $bam_by_name->{$name} = Bio::Otter::BAM->new($name, $config); }
+        try {
+            my $bam = Bio::Otter::BAM->new($name, $config);
+            $bam->wanted(1);
+            $bam_by_name->{$name} = $bam;
+        }
         catch { warn sprintf "BAM section for ${name}: ignored: $_"; };
     }
 
