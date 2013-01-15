@@ -100,7 +100,7 @@ sub ace {
                     # they are parsed into acedb.
                     foreach my $ugf (@ugfs){
                         my $ref_coord   = ($strand  == -1 ? $ugf->end  : $ugf->start) + $offset;
-                        my $match_coord = ($hstrand == -1 ? $ugf->hend : $ugf->hstart) + $offset;
+                        my $match_coord = $hstrand == -1 ? $ugf->hend : $ugf->hstart;
                         my $length      = ($ugf->hend - $ugf->hstart) + 1;
                         $ace .=
                             $query_line
