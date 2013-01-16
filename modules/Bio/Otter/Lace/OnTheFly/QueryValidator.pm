@@ -215,7 +215,7 @@ sub _pfetch_sequences {
     my %seqs_fetched;
     if (@to_pfetch) {
         foreach my $seq (Hum::Pfetch::get_Sequences(@to_pfetch)) {
-            $seqs_fetched{$seq->name} = $seq;
+            $seqs_fetched{$seq->name} = $seq if $seq;
         }
     }
 
