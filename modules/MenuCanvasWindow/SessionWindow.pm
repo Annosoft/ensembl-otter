@@ -861,6 +861,7 @@ sub exit_save_data {
         $adb->error_flag(0);
         $self->close_GenomicFeaturesWindow;   ### Why is this special?
         my $changed = $self->AceDatabase->unsaved_changes;
+        $changed = 'not set' unless defined $change;
         $self->logger->info("Closing $dir (no write access, changed = $changed)");
         return 1;
     }
