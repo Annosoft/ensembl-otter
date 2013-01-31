@@ -31,6 +31,7 @@ my @method_biotype_status = qw{
         IG_segment                  =                       -
         IG_gene                     =                       -
         IG_pseudogene               =                       -
+        TR_gene                     =                       -
         Putative                    processed_transcript    PUTATIVE
 
     Non_coding                      =                       -
