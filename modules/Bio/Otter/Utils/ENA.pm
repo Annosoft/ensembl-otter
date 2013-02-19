@@ -32,6 +32,8 @@ sub new {
 sub get_sample_accessions {
     my ($self, @accessions) = @_;
 
+    return {} unless @accessions;
+
     my $acc_list = join(',', map { uri_escape($_) } @accessions);
     my $uri = $ENA_VIEW_URL . $acc_list . $ENA_XML_SUFFIX;
     my $response = $self->_user_agent->get($uri);

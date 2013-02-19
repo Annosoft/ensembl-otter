@@ -20,7 +20,7 @@ my $ena = $module->new;
 isa_ok($ena, $module);
 
 my @valid_accs = qw(ERS000123 SRS000012 DRS000234);
-my @invalid_accs = qw(ERA000012 XYZ123456); # one submission, one nonsense
+my @invalid_accs = qw(ERA000012 XYZ123456 AA020997); # one submission, one nonsense, one non-SRA
 
 my $results = $ena->get_sample_accessions(@valid_accs, @invalid_accs);
 is(ref($results), 'HASH', 'results hash');
@@ -56,6 +56,11 @@ my $acc = $valid_accs[1];
 my $s_results = $ena->get_sample_accessions($acc);
 is(ref($s_results), 'HASH', 's_results hash');
 ok($s_results->{$acc}, 'result is for singleton acc');
+
+# Empty
+my $e_results = $ena->get_sample_accessions();
+is(ref($e_results), 'HASH', 'e_results hash');
+ok(not(%$e_results), 'result is empty');
 
 done_testing;
 
