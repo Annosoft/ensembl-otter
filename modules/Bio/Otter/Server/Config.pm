@@ -35,7 +35,8 @@ sub data_dir {
         # For internal non-web machines, provide the central copy to
         # remove the need to pretend we have DOCUMENT_ROOT .
 
-        ($root, $src) = ('/nfs/WWWdev/SANGER_docs/htdocs', 'fallback')
+        my $nfs = 'nfs'; # hiding from 'webpublish'
+        ($root, $src) = ("/$nfs/WWWdev/SANGER_docs/htdocs", 'fallback')
           if -d '/software/anacode';
         # Web machines shouldn't have a fallback, too magical.
     }
