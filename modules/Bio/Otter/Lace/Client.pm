@@ -44,8 +44,8 @@ our $PFX = 'otter: ';
 sub _pkginit {
     my ($pkg) = @_;
     my $short = $pkg->config_value('short_window_title_prefix');
-    $short = 1 if !defined $short; # for RT#212261
-    $PFX = 'o:' if $short && $short > 0; # allow opt-out (workaround - B:O:L:D does not merge false values)
+    $PFX = 'o:' if $short && $short > 0;
+    # opt-out by negative values - B:O:L:D does not merge false values
     return 1;
 }
 

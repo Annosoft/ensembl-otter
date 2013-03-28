@@ -418,3 +418,4 @@ url=http://www.sanger.ac.uk/cgi-bin/otter
 write_access=0
 debug=1
 log_level=INFO
+short_window_title_prefix=1
