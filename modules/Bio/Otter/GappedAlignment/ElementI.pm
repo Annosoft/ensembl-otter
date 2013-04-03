@@ -83,7 +83,7 @@ sub divide {
         $t_rem = 0 if $t_rem < 0;
     }
 
-    push @right, $self->new($q_rem, $t_rem);
+    push @right, $self->new($q_rem, $t_rem) if ($q_rem or $t_rem);
 
     return (\@left, \@right);
 }
