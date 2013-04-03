@@ -820,6 +820,46 @@ Readonly my @split_expected => (
             { start => 35467, end => 35739, strand => -1, hstart => 575, hend => 665, cigar => '273M', },
         ],
     },
+
+    {
+        name =>   'RP11-420G6.5-001 vs. Q8CG07 (failing 2013-04-02 ref RT319413)',
+        vulgar => 'Q8CG07 257 400 . chr6-18 0 429 + 713 M 143 429',
+
+        q_id     => 'Q8CG07',
+        q_start  => 257,
+        q_end    => 400,
+        q_strand => '.',
+        t_id     => 'chr6-18',
+        t_start  => 0,
+        t_end    => 429,
+        t_strand => '+',
+        score    => 713,
+        n_ele    => 1,
+
+        ts_strand => 1,
+        exons     => [
+            [  70320,  70355 ], # len  36 cuml    1  36
+            [  72602,  72793 ], # len 192  :     37 228
+            [  74031,  74229 ], # len 199  :    229 427
+            [  87419,  87472 ], # len  54  :    428 481
+            [ 159081, 159130 ], # len  49  :    482 530
+            ],
+
+        intron_vulgar => 'M 12 36 I 0 2246 M 64 192 I 0 1237 M 66 198 S 0 1 I 0 13189 S 1 2',
+
+        intron_t_start  => 70319,
+        intron_t_end    => 87420,
+        intron_t_strand => '+',
+        intron_n_ele    => 8,
+
+        splits => [
+            'Q8CG07 257 269 . chr6-18 70319 70355 + 713 M 12 36',
+            'Q8CG07 269 333 . chr6-18 72601 72793 + 713 M 64 192',
+            'Q8CG07 333 399 . chr6-18 74030 74229 + 713 M 66 198 S 0 1',
+            'Q8CG07 399 400 . chr6-18 87418 87420 + 713 S 1 2',
+        ],
+
+    },
     );
 
 # Coverage matrix: . = tiny, * = real or test
