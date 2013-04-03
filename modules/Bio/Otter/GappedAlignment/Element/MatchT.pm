@@ -10,7 +10,8 @@ use base 'Bio::Otter::GappedAlignment::ElementI';
 
 sub validate {
     my $self = shift;
-    ($self->query_length and $self->target_length) or die "query_length and target_length must be > 0";
+    ($self->query_length and $self->target_length)
+        or $self->logger->logconfess("query_length and target_length must be > 0");
     return;
 }
 

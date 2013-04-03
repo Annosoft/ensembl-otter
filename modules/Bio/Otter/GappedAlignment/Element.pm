@@ -35,15 +35,15 @@ foreach my $class (keys %TYPE_CLASS) {
     my $module = __PACKAGE__->_module_name($class);
     ## no critic (ProhibitStringyEval)
     ## no critic (Anacode::ProhibitEval)
-    eval "require $module" or die "Couldn't load $module";
+    eval "require $module" or die "Couldn't load $module: '$@'";
 }
 
 sub new {
     my ($pkg, $type, $query_length, $target_length) = @_;
-    die "missing element type"  unless $type;
-    die "unknown element type"  unless $TYPE_CLASS{$type};
-    die "missing query_length"  unless defined $query_length;
-    die "missing target_length" unless defined $target_length;
+    $pkg->logger->logconfess("missing element type")  unless $type;
+    $pkg->logger->logconfess("unknown element type")  unless $TYPE_CLASS{$type};
+    $pkg->logger->logconfess("missing query_length")  unless defined $query_length;
+    $pkg->logger->logconfess("missing target_length") unless defined $target_length;
 
     my $class = $pkg->_module_name($type);
 

@@ -15,7 +15,7 @@ sub cigar_type {
     } elsif ($self->query_length) {
         return 'I';
     } else {
-        die 'Neither of target_length and query_length is non-zero';
+        $self->logger->logconfess('Neither of target_length and query_length is non-zero');
     }
 }
 
@@ -29,7 +29,8 @@ sub ensembl_cigar_type {
 
 sub validate {
     my $self = shift;
-    ($self->query_length xor $self->target_length) or die "one of query_length or target_length must be 0";
+    ($self->query_length xor $self->target_length)
+        or $self->logger->logconfess("one of query_length or target_length must be 0");
     return;
 }
 
