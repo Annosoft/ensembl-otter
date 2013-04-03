@@ -30,6 +30,7 @@ sub _new {
     my ($class, %sugar) = @_;
 
     my $pkg = ref($class) || $class;
+    ## no critic (Anacode::ProhibitRebless)
     my $self = bless { %sugar }, $pkg;
     $self->_clear_elements;
 
@@ -39,6 +40,7 @@ sub _new {
 sub _new_copy_basics {
     my $self = shift;
 
+    ## no critic (Anacode::ProhibitRebless)
     my $new = bless { %$self }, ref($self);
     $new->_clear_elements;
 
