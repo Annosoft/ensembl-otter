@@ -2441,6 +2441,7 @@ sub zmap_new {
         Bio::Otter::ZMap->new(
             '-tk'       => $self->menu_bar,
             '-arg_list' => $self->zmap_arg_list,
+            '-short_title' => $self->AceDatabase->Client->config_value('short_window_title_prefix'),
         );
     return $zmap;
 }

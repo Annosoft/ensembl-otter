@@ -46,6 +46,7 @@ sub _init {
     $self->{'_id_view_hash'} = { };
     $self->{'_view_list'} = [ ];
     $self->{'_conf_dir'} = $self->_conf_dir;
+    $self->{'_short_title'} = delete $arg_hash->{'-short_title'}; # goes in config
     $self->_make_conf;
     $self->launch_zmap($arg_hash);
     return;
@@ -65,12 +66,16 @@ sub _conf_dir {
     return $conf_dir;
 }
 
-my $conf = <<'CONF'
+sub _conf_txt {
+    my ($self) = @_;
+    my $shorttl = $self->{'_short_title'} ? 'true' : 'false';
+    return <<"CONF";
 
 [ZMap]
 show-mainwindow = false
+abbrev-window-title = $shorttl
 CONF
-    ;
+}
 
 sub _make_conf {
     my ($self) = @_;
@@ -79,7 +84,7 @@ sub _make_conf {
         or die sprintf
         "failed to open the configuration file '%s': $!"
         , $conf_file;
-    print $conf_file_h $conf;
+    print $conf_file_h $self->_conf_txt;
     close $conf_file_h
         or die sprintf
         "failed to close the configuration file '%s': $!"

@@ -359,7 +359,8 @@ sub zmap_new {
     my $zmap_new =
         Bio::Otter::ZMap->new(
             '-tk'       => $self->SpeciesListWindow->menu_bar,
-            '-arg_list' => $self->AceDatabase->DataSet->zmap_arg_list
+            '-arg_list' => $self->AceDatabase->DataSet->zmap_arg_list,
+            '-short_title' => $self->AceDatabase->Client->config_value('short_window_title_prefix'),
         );
     return $zmap_new;
 }
