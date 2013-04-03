@@ -16,8 +16,8 @@ has transcript => ( is => 'ro', isa => 'Hum::Ace::SubSeq', required => 1 );
 augment '_build_default_options'    => sub { return { } };
 augment '_build_default_qt_options' => sub {
     return {
-        protein => { '--model' => 'protein2dna:bestfit', '--exhaustive' => undef },
-        dna     => { '--model' => 'affine:bestfit',      '--exhaustive' => undef },
+        protein => { '--model' => 'protein2dna',  '--exhaustive' => undef },
+        dna     => { '--model' => 'affine:local', '--exhaustive' => undef },
     };
 };
 
