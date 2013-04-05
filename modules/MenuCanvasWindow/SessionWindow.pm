@@ -575,12 +575,15 @@ sub populate_menus {
     );
 
     # launch in ZMap
+    my $relaunch_zmap = sub { $self->_zmap_view_new($self->zmap_select) };
     $tools_menu->add
       ('command',
-       -label          => 'Launch in Zmap',
-       -command        => sub { $self->_zmap_view_new($self->zmap_select) },
-       -underline      => 0,
+       -label          => 'Relaunch Zmap',
+       -command        => $relaunch_zmap,
+       -accelerator    => 'Ctrl+L',
+       -underline      => 2,
       );
+     $top->bind('<Control-l>', $relaunch_zmap);
 
     # select ZMap
     $tools_menu->add
