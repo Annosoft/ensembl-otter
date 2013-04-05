@@ -53,6 +53,9 @@ PANGO_RC
 find "$resources_dir/lib/pango" -name '*.so' -print0 \
 | xargs -0 pango-querymodules > "$pango_module_file"
 
+# Need the X11 locale directory
+export XLOCALEDIR="$resources_dir/share/X11/locale"
+
 
 # Installation script will set this
 version=
