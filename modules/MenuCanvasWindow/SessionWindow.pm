@@ -1904,8 +1904,12 @@ sub delete_featuresets {
         # we delete types seperately because zmap errors out without
         # deleting anything if any featureset does not currently exist
         # in the zmap window
-
-        $self->zmap->delete_featuresets($type);
+        try {
+            $self->zmap->delete_featuresets($type);
+        }
+        catch {
+            warn $_;
+        };
     }
 
     $self->save_ace($ace);
