@@ -183,17 +183,21 @@ if ($response->is_success) {
             AutoCommit => 1,
         });
         my $db_filter_adaptor = Bio::Otter::Lace::DB::FilterAdaptor->new($dbh);
-        unless (eval {
-            # No transaction!  Make only one statement.  Transactions
-            # require more complex retrying when database is busy.
-            my $rv = $db_filter_adaptor->update_for_filter_get
-              ($gff_source, # WHERE: name
-               $cache_file, # SET: gff_file, done=1, failed=0
-               $process_gff || 0); # SET: process_gff flag
-            die "Changed $rv rows" unless 1 == $rv;
+        if ( eval {
+            $db_filter_adaptor->begin_work;
+            my $db_filter = $db_filter_adaptor->fetch_by_name($gff_source);
+            $db_filter->done(1);
+            $db_filter->failed(0);
+            $db_filter->gff_file($cache_file);
+            $db_filter->process_gff($process_gff || 0);
+            $db_filter_adaptor->update($db_filter);
             1;
              } ) {
+            $db_filter_adaptor->commit;
+        }
+        else {
             my $err = $@;
+            $db_filter_adaptor->rollback;
             my $msg = "Update of otter_filter table in SQLite db failed; $err";
             log_message $msg;
             die $msg;
