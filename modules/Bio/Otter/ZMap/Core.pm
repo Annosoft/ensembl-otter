@@ -10,6 +10,7 @@ use Carp;
 use Scalar::Util qw( weaken );
 use POSIX ();
 
+use Bio::Otter::Debug;
 use Bio::Vega::Utils::MacProxyConfig qw{ mac_os_x_set_proxy_vars };
 
 my @_list = ( );
@@ -69,11 +70,14 @@ sub _conf_dir {
 sub _conf_txt {
     my ($self) = @_;
     my $shorttl = $self->{'_short_title'} ? 'true' : 'false';
+    my $xremote_debug = Bio::Otter::Debug->debug('XRemote');
+    my $xrd = $xremote_debug ? 'true' : 'false';
     return <<"CONF";
 
 [ZMap]
 show-mainwindow = false
 abbrev-window-title = $shorttl
+xremote-debug = $xrd
 CONF
 }
 
