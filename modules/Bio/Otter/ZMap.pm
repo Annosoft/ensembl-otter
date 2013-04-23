@@ -480,7 +480,25 @@ sub _current_request_string {
 
 sub send_commands {
     my ($self, $xremote, @xml) = @_;
-    my @response_list = map { parse_response($_) } $xremote->send_commands(@xml);
+
+    my $debug = Bio::Otter::Debug->debug('XRemote');
+    if ($debug) {
+        warn "send_commands sending:\n";
+        for my $i ( 0 .. $#xml ) {
+            warn "$i: ", $xml[$i], "\n";
+        }
+    }
+
+    my @raw_responses = $xremote->send_commands(@xml);
+    my @response_list = map { parse_response($_) } @raw_responses;
+
+    if ($debug) {
+        warn "send_commands responses:\n";
+        for my $i ( 0 .. $#raw_responses ) {
+            warn "$i: ", $raw_responses[$i], "\n";
+        }
+    }
+
     return @response_list;
 }
 
