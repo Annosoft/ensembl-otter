@@ -34,6 +34,10 @@ Bio::Otter::Debug->add_keys(qw(
     Zircon
     ));
 
+# temporary - inactivate when made live
+Bio::Otter::Debug->set('Zircon,XRemote') if $ENV{OTTERLACE_RAN_AS} =~ /otter(?:lace)_zircon/;
+
+
 =head1 METHODS
 
 =cut
