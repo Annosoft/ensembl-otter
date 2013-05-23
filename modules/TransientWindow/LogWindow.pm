@@ -199,7 +199,7 @@ sub __mailto_init {
     $clue =~ s{otterlace}{otter}g;
 
     @mailto[0,3] = @mailto[3,0]
-      if $clue =~ m{\botter_test|test_otter\b};
+      if $clue =~ m{\botter_test|test_otter\b|zircon};
 
     my $me = getpwuid($<);
     unshift @mailto, [ 'Myself' => "$me$domain" ]
