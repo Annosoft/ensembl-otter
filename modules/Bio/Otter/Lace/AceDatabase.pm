@@ -33,7 +33,21 @@ use Hum::Conf qw{ PFETCH_SERVER_LIST };
 
 Bio::Otter::Debug->add_keys(qw(
     XRemote
+    Zircon
     ));
+
+sub __test_hackage {
+    # temporary - inactivate when made live
+    Bio::Otter::Debug->set('Zircon,XRemote') if $ENV{OTTERLACE_RAN_AS} =~ /otter(?:lace)?_zircon/;
+    warn "debug check - ORA=$ENV{OTTERLACE_RAN_AS}\n";
+
+    if (Bio::Otter::Debug->debug('Zircon')) {
+        $ENV{$_}=1 foreach
+          (qw( ZIRCON_CONNECTION_TRACE ZIRCON_PROTOCOL_TRACE
+               ZIRCON_CONTEXT_TRACE    ZIRCON_SELECTION_TRACE ));
+    }
+}
+__test_hackage();
 
 sub new {
     my ($pkg) = @_;

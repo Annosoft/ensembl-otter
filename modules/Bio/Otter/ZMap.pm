@@ -31,12 +31,7 @@ use Bio::Otter::ZMap::View;
 Bio::Otter::Debug->add_keys(qw(
     XRemote
     ZMap-Valgrind
-    Zircon
     ));
-
-# temporary - inactivate when made live
-Bio::Otter::Debug->set('Zircon,XRemote') if $ENV{OTTERLACE_RAN_AS} =~ /otter(?:lace)_zircon/;
-
 
 =head1 METHODS
 
@@ -47,11 +42,6 @@ sub _init { ## no critic (Subroutines::ProhibitUnusedPrivateSubroutines)
     $self->SUPER::_init($arg_hash);
     my $tk = $arg_hash->{'-tk'};
     $self->{'_widget'} = $self->_widget($tk);
-    if (Bio::Otter::Debug->debug('Zircon')) {
-        $ENV{$_}=1 foreach
-          (qw( ZIRCON_CONNECTION_TRACE ZIRCON_PROTOCOL_TRACE
-               ZIRCON_CONTEXT_TRACE    ZIRCON_SELECTION_TRACE ));
-    }
     return;
 }
 
