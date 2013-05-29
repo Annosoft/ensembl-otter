@@ -16,6 +16,7 @@ use Bio::Otter::Utils::About;
 use Bio::Otter::Lace::Client;
 use Bio::Vega::Utils::URI qw( open_uri );
 
+use Zircon::ZMap;
 use Zircon::Tk::Context;
 
 sub new {
@@ -58,6 +59,7 @@ sub new {
     $canvas->Tk::bind('<Control-P>', $prefs_command);
 
     my $quit_command = sub{
+        $self->zircon_delete; # we *must* do this explicitly before the next line
         $self->canvas->toplevel->destroy;
         $self = undef;  # $self gets nicely DESTROY'd with this
     };
@@ -432,6 +434,16 @@ sub zircon_context {
         Zircon::Tk::Context->new(
             '-widget' => $self->menu_bar);
     return $zircon_context;
+}
+
+sub zircon_delete {
+    my ($self) = @_;
+    for my $zmap (@{Zircon::ZMap->list}) {
+        for my $view (@{$zmap->view_list}) {
+            delete $view->handler->{'_zmap_view'};
+        }
+    }
+    return;
 }
 
 1;
