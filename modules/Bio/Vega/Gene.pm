@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Bio::EnsEMBL::Utils::Argument qw ( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw ( throw warning );
+use Bio::Vega::Utils::Attributes;
 use base 'Bio::EnsEMBL::Gene';
 
 
@@ -34,16 +35,6 @@ sub source  {
   return ( $self->{'source'} || "havana" );
 }
 
-# Duplicated in Bio::Vega::Transcript
-sub all_Attributes_string {
-    my ($self) = @_;
-
-    return join ('-',
-        map {$_->code . '=' . $_->value}
-        sort {$a->code cmp $b->code || $a->value cmp $b->value}
-        @{$self->get_all_Attributes});
-}
-
 sub vega_hashkey {
     my ($self) = @_;
 
@@ -66,7 +57,7 @@ sub vega_hashkey {
         || throw("there are no transcripts for this gene to generate correct vega_hashkey");
 
     my $description = $self->description || '';
-    my $attrib_string = $self->all_Attributes_string;
+    my $attrib_string = $self->Bio::Vega::Utils::Attributes::all_Attributes_string;
 
     return join '-'
         , $seq_region_name, $start, $end, $strand

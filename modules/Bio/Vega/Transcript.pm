@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Bio::EnsEMBL::Utils::Argument qw ( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::Vega::Utils::Attributes;
 use base 'Bio::EnsEMBL::Transcript';
 use Bio::Vega::Translation;
 
@@ -130,16 +131,6 @@ sub truncate_to_Slice {
   return $exons_truncated;
 }
 
-# Duplicated in Bio::Vega::Gene
-sub all_Attributes_string {
-    my ($self) = @_;
-
-    return join ('-',
-        map {$_->code . '=' . $_->value}
-        sort {$a->code cmp $b->code || $a->value cmp $b->value}
-        @{$self->get_all_Attributes});
-}
-
 sub vega_hashkey {
   my ($self) = @_;
 
@@ -159,7 +150,7 @@ sub vega_hashkey {
   my $exon_count = scalar @{$self->get_all_Exons}
       || throw("there are no exons for this transcript to generate correct vega_hashkey");
   my $description = $self->{'description'} ? $self->{'description'}: '' ;
-  my $attrib_string = $self->all_Attributes_string;
+  my $attrib_string = $self->Bio::Vega::Utils::Attributes::all_Attributes_string;
 
   my $evidence_count = scalar(@{$self->evidence_list});
 
