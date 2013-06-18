@@ -573,6 +573,6 @@ __DATA__
 [client]
 url=http://www.sanger.ac.uk/cgi-bin/otter
 write_access=0
-debug=Client
+debug=Client,Zircon,XRemote
 log_level=INFO
 short_window_title_prefix=1
