@@ -36,16 +36,8 @@ Bio::Otter::Debug->add_keys(qw(
     Zircon
     ));
 
-sub __push_zircon_debug {
-    if (Bio::Otter::Debug->debug('Zircon')) {
-        $ENV{$_}=1 foreach
-          (qw( ZIRCON_CONNECTION_TRACE ZIRCON_PROTOCOL_TRACE
-               ZIRCON_CONTEXT_TRACE    ZIRCON_SELECTION_TRACE ));
-    }
+Bio::Otter::Debug->set('Zircon,XRemote'); # XXX:TMP B:O:L:Defaults [client]debug is ineffective
 
-    return;
-}
-__push_zircon_debug();
 
 sub new {
     my ($pkg) = @_;
