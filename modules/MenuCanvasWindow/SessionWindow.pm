@@ -2511,11 +2511,15 @@ sub zmap_new {
         '--conf_dir' => $config_dir,
         @{$DataSet->zmap_arg_list},
         ];
+    my $client = $self->AceDatabase->Client;
     my $zmap =
         Zircon::ZMap->new(
             '-app_id'     => $self->zircon_app_id,
             '-context'    => $self->zircon_context,
             '-arg_list'   => $arg_list,
+            '-timeout_ms'      => $client->config_section_value(Peer => 'timeout-ms'),
+            '-timeout_retries' => $client->config_section_value(Peer => 'timeout-retries'),
+            '-rolechange_wait' => $client->config_section_value(Peer => 'rolechange-wait'), # XXX: temporary, awaiting RT#324544
         );
     return $zmap;
 }

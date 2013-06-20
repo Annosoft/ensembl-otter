@@ -1304,7 +1304,12 @@ sub unlock_otter_xml {
 sub config_value {
     my ($self, $key) = @_;
 
-    return Bio::Otter::Lace::Defaults::config_value('client', $key);
+    return $self->config_section_value(client => $key);
+}
+
+sub config_section_value {
+    my ($self, $section, $key) = @_;
+    return Bio::Otter::Lace::Defaults::config_value($section, $key);
 }
 
 sub config_value_list {

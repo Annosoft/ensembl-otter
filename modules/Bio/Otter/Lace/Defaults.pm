@@ -576,3 +576,8 @@ write_access=0
 debug=Client,Zircon,XRemote
 log_level=INFO
 short_window_title_prefix=1
+
+[Peer]
+timeout-ms=2000
+timeout-retries=10
+rolechange-wait=500
