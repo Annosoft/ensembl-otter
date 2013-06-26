@@ -579,5 +579,5 @@ short_window_title_prefix=1
 
 [Peer]
 timeout-ms=2000
-timeout-retries=10
+timeout-retries=20
 rolechange-wait=500
