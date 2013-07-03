@@ -59,6 +59,9 @@ sub zmap_config_global {
 show-mainwindow = false
 abbrev-window-title = $st
 xremote-debug = $xrd
+
+[logging]
+show-time = true
 CONF
 }
 
