@@ -29,8 +29,9 @@ sub make_log {
 
       log4perl.appender.Logfile                          = Log::Log4perl::Appender::File
       log4perl.appender.Logfile.filename                 = $logfile
-      log4perl.appender.Logfile.layout                   = Log::Log4perl::Layout::PatternLayout::Multiline
-      log4perl.appender.Logfile.layout.ConversionPattern = %d{ISO8601} %c %p: %m%n
+      log4perl.appender.Logfile.layout                   = Bio::Otter::Log::Layout::UseSrcTimestamp
+      log4perl.appender.Logfile.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss,SSSS} %c %p: %m%n
+      log4perl.appender.Logfile.layout.Debug             = 0
     );
 
     $config ||= \$default_conf;
