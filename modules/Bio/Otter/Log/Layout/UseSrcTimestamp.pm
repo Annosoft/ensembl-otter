@@ -70,6 +70,8 @@ sub render {
         if ($self->{Debug}) {
             my $zmap_ts = sprintf "%s/%s/%s %s.%s", @z_comps{qw( Z_MM Z_dd Z_yyyy Z_time Z_subsec )};
             $debug   = sprintf "\n[%s ~> %s]", $old_ts, $zmap_ts;
+        } else {
+            $debug = ' [zmap_ts]';
         }
 
         my $content = $z_comps{Z_pre} ? join(' ', $z_comps{Z_pre}, $z_comps{Z_post}) : $z_comps{Z_post};
