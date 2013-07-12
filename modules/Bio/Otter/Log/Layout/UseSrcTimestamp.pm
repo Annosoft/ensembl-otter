@@ -36,9 +36,9 @@ sub render {
     my $zmap_ts_r = qr'
         ^
         (?<Z_pre>.*)
-        (?<Z_MM>\d{2}) / (?<Z_dd>\d{2}) / (?<Z_yyyy>\d{4})    # date components
+        (?<Z_yyyy>\d{4}) / (?<Z_MM>\d{2}) / (?<Z_dd>\d{2})    # date components
         \s+
-        (?<Z_time>\d{2} : \d{2} : \d{2}) \. (?<Z_subsec>\d+)  # time components
+        (?<Z_time>\d{2} : \d{2} : \d{2}) , (?<Z_subsec>\d+)  # time components
         \s+
         (?<Z_post>.*)
         $
@@ -68,7 +68,8 @@ sub render {
 
         my $debug;
         if ($self->{Debug}) {
-            my $zmap_ts = sprintf "%s/%s/%s %s.%s", @z_comps{qw( Z_MM Z_dd Z_yyyy Z_time Z_subsec )};
+            my $zmap_ts = sprintf "%s/%s/%s %s,%s", @z_comps{qw( Z_yyyy Z_MM Z_dd Z_time Z_subsec )};
+
             $debug   = sprintf "\n[%s ~> %s]", $old_ts, $zmap_ts;
         } else {
             $debug = ' [zmap_ts]';
