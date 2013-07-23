@@ -130,25 +130,12 @@ sub draw {
     $self->tail_process($pid);
     $self->logfile_handle($fh);
     my $txt = $self->readonly_text;
-    my $appender = sub {
-        if (defined $self) {
-            $self->show_output;
-        } else {
-            # We are in global destruction or window <Destroy>
-            close $fh;
-            $self->logfile_handle(undef);
-            warn "LogWindow: nowhere to write, closing the pipe";
-        }
-    };
-    $txt->fileevent($fh, 'readable', $appender);
-    $txt->bind('<Destroy>', sub { $self = undef });
 
-    # Unbuffer filehandle
-    $fh->autoflush(1);
+    # Non-blocking filehandle so we don't stall the app
+    $fh->blocking(0);
 
-    #my $string = $self->get_log_contents();
-    #$ROText->delete('1.0', 'end');
-    #$ROText->insert('end', $string);
+    $txt->fileevent($fh, 'readable', # is unhooked by close $fh
+                    [ $self, 'show_output' ]);
 
     $self->{'_drawn'} = 1;
     return;
@@ -192,10 +179,43 @@ sub show_output {
     # Guard against being called too early
     return unless $self->{'_drawn'};
 
+    # Guard against recursion; but we still must not call 'update'
+    return if $self->{_show_output__threaded};
+    local $self->{_show_output__threaded} = 1;
+
+    # Guard against global destruction or window <Destroy>ed
+    unless (Tk::Exists($txt) && $fh) {
+        $self->logfile_handle(undef);
+        if ($fh) {
+            close $fh; # ignore tail process exit status
+            warn "LogWindow: no GUI to write in, closed the pipe";
+        }
+        if (Tk::Exists($txt)) {
+            $txt->insert('end', 'Appending stopped because pipe was closed');
+        }
+        return;
+    };
+
+    # Read log file
+    my $nread;
+    my $add = '';
+    do {
+        $nread = read($fh, $add, 1024, length($add));
+        # This should be non-blocking, but when called in the context
+        # of Tk::Error it is apparently a blocking call despite
+        # frobbing $fh->blocking .  Therefore we don't loop.
+
+        # if (!defined $nread) {
+        #   ignore error, probably 11=='Resource temporarily unavailable'
+        # }
+    }
+    # Would like to slurp all input, else we will be called again next
+    # event, but this is only possible when non-blocking works.
+      ;# while ($nread && !$no_jump);
+
     # Logfile can contain binary junk from Otterlace or child
     # processes.  We can't prevent it & Tk::ROText cannot accept it.
     # => Quote here
-    my $add = join '', <$fh>;
     $add =~ s{\\x([0-9a-fA-F][0-9a-fA-F])}{\\5Cx$1}g; # Literal \x00 to \x5Cx00
     $add =~ s{([^ -~\n])}{sprintf('\\x%02X', ord($1))}eg; # quote non-ASCII
 
