@@ -217,19 +217,7 @@ sub show_log{
     my ($self) = @_;
 
     require TransientWindow::LogWindow;
-    require Bio::Otter::LogFile;
-
-    my $tw = $self->{'__tw_log'};
-    unless($tw){
-        $tw = TransientWindow::LogWindow->new
-          ($self->top_window(),
-           $Bio::Otter::Lace::Client::PFX.'log file - '.
-           Bio::Otter::LogFile->current_logfile);
-        $tw->initialise();
-        $tw->draw();
-        $self->{'__tw_log'} = $tw;
-    }
-    $tw->show_me();
+    my $tw = TransientWindow::LogWindow->show_for($self->top_window);
 
     return;
 }

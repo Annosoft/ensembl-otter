@@ -5,6 +5,7 @@ use warnings;
 
 use IO::Handle;
 use Bio::Otter::LogFile;
+use Bio::Otter::Lace::Client;
 use Bio::Otter::Git;
 use Bio::Vega::Utils::URI qw{ open_uri uri_config_how };
 use Net::Domain qw{ hostfqdn };
@@ -15,6 +16,31 @@ use base qw( TransientWindow );
 my @mailto; # file global, init-once
 __mailto_init();
 
+
+sub show_for {
+    my ($pkg, $w) = @_;
+
+    my $mw = $w->MainWindow;
+    my $tw = $mw->{'__tw_log'};
+
+    if (!$tw) {
+        my $title = $Bio::Otter::Lace::Client::PFX.'log file - '.
+          $pkg->current_logfile;
+        $tw = TransientWindow::LogWindow->new($mw, $title);
+        $mw->{'__tw_log'} = $tw; # not yet initialised
+        $tw->initialise();
+        $tw->draw;
+        $tw->show_me();
+    } elsif (!$tw->{'_drawn'}) {
+        # Window was being initialised but we recursed?
+        # It will happen soon; show_output will be no-op
+    } else {
+        # Window found and ready, may be hidden
+        $tw->show_me();
+    }
+
+    return $tw;
+}
 
 sub initialise {
     my ($self, @args) = @_;
@@ -162,6 +188,9 @@ sub show_output {
 
     my $fh  = $self->logfile_handle;
     my $txt = $self->readonly_text;
+
+    # Guard against being called too early
+    return unless $self->{'_drawn'};
 
     # Logfile can contain binary junk from Otterlace or child
     # processes.  We can't prevent it & Tk::ROText cannot accept it.
