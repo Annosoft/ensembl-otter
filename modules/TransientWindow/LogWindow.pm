@@ -294,7 +294,8 @@ sub message_highlight {
     my ($self, $msg) = @_;
 
     my $txt = $self->readonly_text;
-    $txt->insert('end', "$msg\n", 'seenmark');
+    chomp $msg;
+    $txt->insert('end - 1 char linestart', "$msg\n", 'seenmark');
     warn "(LogWindow mark inserted to highlight entry: $msg)\n";
 
     return ();
