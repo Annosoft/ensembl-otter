@@ -219,8 +219,14 @@ sub show_output {
     $add =~ s{\\x([0-9a-fA-F][0-9a-fA-F])}{\\5Cx$1}g; # Literal \x00 to \x5Cx00
     $add =~ s{([^ -~\n])}{sprintf('\\x%02X', ord($1))}eg; # quote non-ASCII
 
+    my (undef, $oldY) = @{ $txt->yview };
+    my $jump = $oldY > 0.999999;
+
+    my @tagged = $txt->tagRanges('seenmark');
+    $jump = 0 if @tagged;
+
     $txt->insert('end', $add);
-    $txt->yview('end');
+    $txt->yview('end') if $jump;
 
     return;
 }
@@ -295,6 +301,7 @@ sub message_highlight {
 
     my $txt = $self->readonly_text;
     chomp $msg;
+    $txt->yview('end');
     $txt->insert('end - 1 char linestart', "$msg\n", 'seenmark');
     warn "(LogWindow mark inserted to highlight entry: $msg)\n";
 
