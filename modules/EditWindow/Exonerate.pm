@@ -226,9 +226,16 @@ sub initialise {
 
     ### Commands
     my $button_frame = $top->Frame->pack(@frame_pack);
+    my $doing_launch = 0;       # captured by closure...
     my $launch       = sub {
-        $self->launch_exonerate or return;
-        $top->withdraw;
+        if ($doing_launch) {
+            $self->logger->warn("Already launched, ignoring click.");
+            return;
+        }
+        $doing_launch = 1;
+        my $okay = $self->launch_exonerate;
+        $top->withdraw if $okay;
+        $doing_launch = 0;
     };
     $button_frame->Button(
         -text      => 'Launch',
