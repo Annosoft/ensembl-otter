@@ -29,6 +29,23 @@ case "$( hostname -f 2>/dev/null || hostname )" in
         ;;
 esac
 
+
+# Deal with per-distribution /software
+# XXX:DUP with team_tools/bash_profile
+distro_code="$( $anasoft/bin/anacode_distro_code )" || {
+    echo "Failed to get $anasoft distribution type" >&2
+    exit 1
+}
+case "$distro_code" in
+    lenny|lucid|squeeze) otter_perl='/software/perl-5.12.2/bin' ;;
+    precise) otter_perl='/software/perl-5.14.4/bin' ;;
+    *)
+        echo "Not configured for unknown distribution $distro_code" >&2
+        exit 1
+        ;;
+esac
+
+
 # Copy the *_proxy variables we want into *_PROXY, to simplify logic
 if [ -n "$http_proxy" ]; then
     HTTP_PROXY="$http_proxy"
@@ -58,14 +75,14 @@ export OTTER_HOME
 LD_LIBRARY_PATH=
 export LD_LIBRARY_PATH
 
-anasoft_distro="$anasoft/distro/$( $anasoft/bin/anacode_distro_code )"
+anasoft_distro="$anasoft/distro/$distro_code"
 
 otterbin="\
 $OTTER_HOME/bin:\
 $anasoft_distro/bin:\
 $anasoft/bin:\
 /software/pubseq/bin/EMBOSS-5.0.0/bin:\
-/software/perl-5.12.2/bin\
+$otter_perl\
 "
 
 if [ -n "$ZMAP_BIN" ]
