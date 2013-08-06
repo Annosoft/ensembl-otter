@@ -389,7 +389,7 @@ sub _repeat_masker {
     my $offset = $ace_database->offset;
 
     my $dataset = $ace_database->DataSet;
-    foreach my $filter_name qw( trf RepeatMasker ) {
+    foreach my $filter_name (qw( trf RepeatMasker )) {
         my $filter = $dataset->filter_by_name($filter_name);
         $self->logger->logconfess("no filter named '${filter_name}'") unless $filter;
         $filter->call_with_session_data_handle(
