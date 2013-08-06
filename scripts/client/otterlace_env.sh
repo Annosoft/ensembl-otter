@@ -4,12 +4,21 @@
 version=
 anasoft=
 OTTER_HOME=
+otter_perl=
 
 
 # check that the installation script has set things up
-if [ -z "$version" ]
+if [ -z "$version" ] || [ -z "$otter_perl" ]
 then
     echo "This script has been improperly installed!  Consult the developers!" >&2
+    exit 1
+fi
+
+if [ "$otter_perl" = 'perl_is_bundled' ] || [ -x "$otter_perl/perl" ]; then
+    # ok
+    :
+else
+    echo "Cannot find Perl at otter_perl=$otter_perl" >&2
     exit 1
 fi
 
@@ -58,29 +67,6 @@ export OTTER_HOME
 LD_LIBRARY_PATH=
 export LD_LIBRARY_PATH
 
-anasoft_distro="$anasoft/distro/$( $anasoft/bin/anacode_distro_code )"
-
-otterbin="\
-$OTTER_HOME/bin:\
-$anasoft_distro/bin:\
-$anasoft/bin:\
-/software/pubseq/bin/EMBOSS-5.0.0/bin:\
-/software/perl-5.12.2/bin\
-"
-
-if [ -n "$ZMAP_BIN" ]
-then
-    otterbin="$ZMAP_BIN:$otterbin"
-    echo "  Hacked otterbin for ZMAP_BIN=$ZMAP_BIN" >&2
-fi
-
-if [ -n "$PATH" ]
-then
-    PATH="$otterbin:$PATH"
-else
-    PATH="$otterbin"
-fi
-export PATH
 
 # Settings for wublast needed by local blast searches
 WUBLASTFILTER=$anasoft/bin/wublast/filter
@@ -101,13 +87,15 @@ $OTTER_HOME/ensembl-analysis/modules:\
 $OTTER_HOME/ensembl/modules:\
 $OTTER_HOME/ensembl-variation/modules:\
 $OTTER_HOME/lib/perl5:\
-$OTTER_HOME/ensembl-otter/tk:\
+$OTTER_HOME/ensembl-otter/tk\
 "
 
 osname="$( uname -s )"
 
 case "$osname" in
     Darwin)
+        anasoft_distro=
+        otter_perl=
         PERL5LIB="${PERL5LIB}:\
 $anasoft/lib/site_perl:\
 $anasoft/lib/perl5/site_perl:\
@@ -117,6 +105,12 @@ $anasoft/lib/perl5\
         ;;
 
     *)
+        distro_code="$( $anasoft/bin/anacode_distro_code )" || {
+            echo "Failed to get $anasoft distribution type" >&2
+            exit 1
+        }
+        anasoft_distro="$anasoft/distro/$distro_code"
+
         PERL5LIB="${PERL5LIB}:\
 $anasoft_distro/lib:\
 $anasoft_distro/lib/site_perl:\
@@ -126,10 +120,26 @@ $anasoft/lib/site_perl\
         ;;
 esac
 
+otterbin="\
+$OTTER_HOME/bin:\
+${anasoft_distro:+$anasoft_distro/bin:}\
+$anasoft/bin:\
+${otter_perl:+$otter_perl:}\
+/software/pubseq/bin/EMBOSS-5.0.0/bin\
+"
+
+if [ -n "$ZMAP_BIN" ]
+then
+    otterbin="$ZMAP_BIN:$otterbin"
+    echo "  Hacked otterbin for ZMAP_BIN=$ZMAP_BIN" >&2
+fi
+
 if [ -n "$ZMAP_LIB" ]
 then
     PERL5LIB="$ZMAP_LIB:$ZMAP_LIB/site_perl:$PERL5LIB"
     echo "  Hacked PERL5LIB for ZMAP_LIB=$ZMAP_LIB" >&2
 fi
+
+export PATH="$otterbin${PATH:+:$PATH}"
 
 export PERL5LIB
