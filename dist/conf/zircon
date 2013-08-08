@@ -1,4 +1,3 @@
-f5be02d8b052944011979a40908cf34f3ea73bba
+d24985e659716f412c92634de6653c98e00b8227
 
-Note that otterlace_build does not yet honour this file,
-instead taking current master.
+(File is honoured by team_tools.git otter/75 or later)
