@@ -431,6 +431,10 @@ sub zircon_delete {
             delete $view->handler->{'_zmap_view'};
         }
     }
+    for my $ref (values %{$self->zircon_context->waitVariable_hash}) {
+        defined $ref or next;
+        ${$ref} = 'zircon_delete';
+    }
     return;
 }
 
