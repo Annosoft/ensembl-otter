@@ -165,7 +165,7 @@ sub initialise {
 
     for (@{$input_widgets}) {
         my ($key, $default, $name, $button_list) = @{$_};
-        $self->{$key} = $default;
+        $self->{$key} = $default; # make sure variable exists before we reference it...
         my $button_list_frame =
             $input_frame->LabFrame(
                 -label  => $name,
@@ -180,6 +180,7 @@ sub initialise {
                 -value    => $value,
                 )->pack(-side => 'left', -expand => 1, -fill => 'x');
         }
+        $self->{$key} = $default; # ...and then ensure it is still set correctly.
     }
 
     ### Parameters
