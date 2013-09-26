@@ -7,6 +7,9 @@ use warnings;
 use Bio::Otter::Lace::Defaults;
 
 {
+    # Script no longer in use in production:
+    exec('perldoc', $0);
+
     my $dsname = 'human';
     my $switch = 'get';
     my $chr_name = '';
@@ -248,6 +251,20 @@ sub get_region_with_sequence_note_before_date {
 __END__
 
 =head1 NAME - clone_annotation_status
+
+=head1 DESCRIPTION
+
+We used to use this to mark up annotated clones, as described by Steve
+Trevanion:
+
+If it helps, then many moons ago I asked if loutre could store the
+annotation info in the seq_region_attrib table since it's slightly easier
+for us production wise. You ran a script to add them, and in Vega we used
+it for a little while. However we reverted to using the contig_attribs
+since the seq_region_attribs weren't being kept upto date and we found we
+were dumping annotation on clones that Havana had removed the annotated
+flag from.
+
 
 =head1 AUTHOR
 
