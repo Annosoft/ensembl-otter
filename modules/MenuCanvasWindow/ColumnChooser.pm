@@ -557,9 +557,11 @@ sub load_filters {
     $top->Busy(-recurse => 1);
 
     my $cllctn = $self->SearchHistory->root_Collection;
+
     # So that next session will use current selected filters:
-    warn "save_Columns_selected_flag_to_Filter_wanted...";
     $cllctn->save_Columns_selected_flag_to_Filter_wanted;
+    $self->AceDatabase->save_filter_state;
+
     my @to_fetch = $cllctn->list_Columns_with_status('Selected');
     foreach my $col (@to_fetch) {
         $col->status('Loading');
@@ -578,8 +580,6 @@ sub load_filters {
         or return;
         $self->init_flag(0);
     }
-
-    $self->AceDatabase->save_filter_state if @to_fetch;
 
     if ($self->SessionWindow) {
         if (@to_fetch) {
