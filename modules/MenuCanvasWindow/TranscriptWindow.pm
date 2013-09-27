@@ -2802,6 +2802,9 @@ sub _do_save_subseq_work {
         # from update_Locus in the SessionWindow
         $SessionWindow->update_Locus($sub->Locus);
 
+        ### Update all subseq edit windows (needs a sane Ace server)
+        $SessionWindow->draw_subseq_list;
+
         $sub->is_archival(1);
     }
 

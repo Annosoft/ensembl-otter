@@ -91,8 +91,6 @@ sub initialize {
 
     $self->set_window_title;
 
-    # take GeneMethods from methods.ace file
-    $self->set_known_GeneMethods();
 
     unless ($self->AceDatabase->write_access) {
         $self->menu_bar()->Label(
@@ -104,12 +102,16 @@ sub initialize {
                     );
     }
 
+    $self->Assembly;
     $self->fetch_external_SubSeqs;
     $self->populate_clone_menu;
+    # Drawing the sequence list can take a long time the first time it is
+    # called (QC checks not yet cached), so do it before zmap is launched.
+    $self->draw_subseq_list;
+
     $self->AceDatabase->zmap_dir_init;
     $self->_zmap_view_new($self->{'_zmap'});
     delete $self->{'_zmap'};
-    $self->top_window->raise;
 
     return;
 }
@@ -239,9 +241,9 @@ sub empty_Locus_cache {
 sub update_Locus {
     my ($self, $new_locus) = @_;
 
-    $self->set_Locus($new_locus);
-
     my $locus_name = $new_locus->name;
+
+    $self->set_Locus($new_locus);
 
     foreach my $sub_name ($self->list_all_SubSeq_names) {
         my $sub = $self->get_SubSeq($sub_name) or next;
@@ -1498,14 +1500,16 @@ sub update_from_process_result {
     my ($self, $process_result) = @_;
     my ($transcripts, $failed) =
         @{$process_result}{qw( -transcripts -failed )};
-    $self->add_external_SubSeqs(@{$transcripts});
+    if (@$transcripts) {
+        $self->add_external_SubSeqs(@{$transcripts});
+        $self->draw_subseq_list;        
+    }
     if (@{$failed}) {
         my $message = sprintf
             'Failed to load any transcripts from column(s): %s'
             , join ', ', sort map { $_->name } @{$failed};
         $self->message($message);
     }
-    $self->draw_subseq_list;
     return;
 }
 
@@ -1975,9 +1979,6 @@ sub replace_SubSeq {
             $self->get_Locus($prev_name)->drop_otter_id;
         }
         $self->set_Locus($locus);
-
-        ### Update all subseq edit windows (needs a sane Ace server)
-        $self->draw_subseq_list;
     }
 
     if ($done_zmap) {
@@ -2216,6 +2217,7 @@ sub draw_sequence_list {
                 $style = 'normal';
             }
             else {
+                ### Not sure this needs a try/catch - no die or confess in pre_otter_save_error()
                 try { $error = $sub->pre_otter_save_error; }
                 catch { $error = $_; };
                 if ($error) {
