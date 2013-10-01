@@ -49,7 +49,7 @@ sub name {
 
 sub zmap_config_global {
     my ($self) = @_;
-    my $short_title => $self->Client->config_value('short_window_title_prefix');
+    my $short_title = $self->Client->config_value('short_window_title_prefix');
     my $st = $short_title ? 'true' : 'false';
     my $xremote_debug = Bio::Otter::Debug->debug('XRemote');
     my $xrd = $xremote_debug ? 'true' : 'false';
