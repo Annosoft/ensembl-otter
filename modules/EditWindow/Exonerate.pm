@@ -501,8 +501,6 @@ sub launch_exonerate {
         return;
     }
 
-    $self->top->Busy;
-
     # OTF should not influence unsaved changes state of the session
     $SessionWindow->flag_db_edits(0);
 
@@ -517,8 +515,6 @@ OTF_Protein });
     }
 
     my $db_edited = $SessionWindow->launch_exonerate($otf);
-
-    $self->top->Unbusy;
 
     $SessionWindow->flag_db_edits(1);
 
