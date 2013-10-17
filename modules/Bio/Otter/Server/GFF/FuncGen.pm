@@ -74,3 +74,12 @@ sub get_requested_features {
 }
 
 1;
+
+__END__
+
+=head1 NAME - Bio::Otter::LogFile
+
+=head1 AUTHOR
+
+Ana Code B<email> anacode@sanger.ac.uk
+
