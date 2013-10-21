@@ -112,12 +112,26 @@ sub _print_feature {
         push @target_fields, $query_strand;
     }
 
+    # $feature->cigar_str has the wrong format for the Gap tag
+    # (eg. 76M instead of M76) so we have to build it from
+    # $feature->cigar_array (which, strangely, has the operator
+    # and count arguments in the right order for the Gap tag even
+    # though $feature->cigar_str has them in the wrong order)
+
+    my @gap = map {
+        ($_->[0] eq 'S') ? ( ) : ( join '', @{$_} );
+    } @{$feature->cigar_array};
+    if ($query_strand == -1) {
+        @gap = reverse @gap;
+    }
+
     my $attribute_hash = {
         Class      => 'Sequence',
         Name       => $feature->name,
         Align      => \ @align_fields,
         Length     => $feature->l_qseq,
         cigar_bam  => $feature->cigar_str,
+        Gap        => join(' ', @gap),
         Target     => \ @target_fields,
         sequence   => $query->seq->seq,
     };
