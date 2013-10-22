@@ -124,10 +124,8 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_DAS {
         split(/(--CONTAINS--|--LACKS--)/, $sieve);
     $sieve_field_path &&= [ split(/--THEN--/,$sieve_field_path) ];
 
-    my $grouplabel_field_path =
-        $grouplabel
-        ? [ map { [ split(/--THEN--/,$_) ] } split(/--JOIN--/,$grouplabel) ]
-        : '';
+    my $grouplabel_field_path;
+    $grouplabel_field_path = [ split /--THEN--/, $grouplabel ] if $grouplabel;
 
     # DAS servers will give all features if a "type=" argument is not present
     if ($analysis_name and $analysis_name eq 'all') {
