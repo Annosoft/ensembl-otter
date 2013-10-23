@@ -299,7 +299,7 @@ sub _add_warning {
 sub _add_remap_warning {
     my ($self, $old, $new) = @_;
     my $remap_warnings = $self->_warnings->{remapped} ||= [];
-    $self->add_warning( remapped => [ $old => $new ] );
+    $self->_add_warning( remapped => [ $old => $new ] );
     return;
 }
 
