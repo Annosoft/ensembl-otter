@@ -26,10 +26,32 @@ sub new {
     return $self;
 }
 
+### FIXME: wanted and wanted_default are duplicated in Bio::Otter::Filter
+
 sub wanted {
+    my ($self, $wanted) = @_;
+
+    if (defined($wanted)) {
+        $self->{'_wanted'} = $wanted ? 1 : 0;
+        unless (defined $self->{'_wanted_default'}) {
+            $self->{'_wanted_default'} = $self->{'_wanted'};
+        }
+    }
+    return $self->{'_wanted'};
+}
+
+sub wanted_default {
     my ($self, @args) = @_;
-    ($self->{_wanted}) = @args if @args;
-    return $self->{_wanted};
+
+    if (@args) {
+        confess "wanted_default is a read-only method";
+    }
+    elsif (! defined $self->{'_wanted_default'}) {
+        confess "Error: wanted must be set before wanted_default is called";
+    }
+    else {
+        return $self->{'_wanted_default'};
+    }
 }
 
 sub name {
