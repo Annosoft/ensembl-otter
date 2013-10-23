@@ -39,7 +39,7 @@ my @server_params = (
     qw(
     grouplabel
     dsn
-    sieve
+    type_id
     source
     ),
 
@@ -292,10 +292,10 @@ sub dsn {
     return $self->{_dsn};
 }
 
-sub sieve {
-    my ($self, $sieve) = @_;
-    $self->{_sieve} = $sieve if $sieve;
-    return $self->{_sieve};
+sub type_id {
+    my ($self, $type_id) = @_;
+    $self->{_type_id} = $type_id if $type_id;
+    return $self->{_type_id};
 }
 
 sub source {

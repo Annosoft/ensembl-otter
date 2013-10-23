@@ -90,7 +90,7 @@ sub struct_show_path {
 sub Bio::EnsEMBL::Slice::get_all_features_via_DAS {
     # $feature_kind = 'SimpleFeature' || 'PredictionExon'
     my ($slice, $server, $das, $chr_name, $analysis_name,
-        $feature_kind, $sieve, $grouplabel,
+        $feature_kind, $type_id, $grouplabel,
         ) = @_;
 
     my $feature_subhash     = $LangDesc{$feature_kind};
@@ -119,10 +119,6 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_DAS {
     my $chr_start = $slice->start();
     my $chr_end   = $slice->end();
     my $segment_name  = "$chr_name:$chr_start,$chr_end";
-
-    my ($sieve_field_path, $sieve_sign, $sieve_value) =
-        split(/(--CONTAINS--|--LACKS--)/, $sieve);
-    $sieve_field_path &&= [ split(/--THEN--/,$sieve_field_path) ];
 
     my $grouplabel_field_path;
     $grouplabel_field_path = [ split m(/), $grouplabel ] if $grouplabel;
@@ -163,22 +159,11 @@ sub Bio::EnsEMBL::Slice::get_all_features_via_DAS {
 
             my ($truncated_5_prime, $truncated_3_prime);
 
-                # Filter out introns and other features that may be sent by
-                # the server but irrelevant for us:
-            if($sieve) {
-                my $sieve_field =
-                    struct_traverse_path($das_feature, $sieve_field_path);
-                if( 
-                    # wanted to include it, but it's not here
-                    (($sieve_sign eq '--CONTAINS--')
-                     && ($sieve_field!~/$sieve_value/i))
-                    ||
-                    # wanted to exclude it, but it's here
-                    (($sieve_sign eq '--LACKS--')
-                     && ($sieve_field=~/$sieve_value/i))
-                    ) {
-                    next FEATURE;
-                }
+            # filter by type_id if required
+            if ($type_id) {
+                my $feature_type_id = $das_feature->{'type_id'};
+                (defined $feature_type_id && $feature_type_id eq $type_id)
+                    or next FEATURE;
             }
 
             # Skip features that don't overlap segment
@@ -333,7 +318,7 @@ sub get_requested_features {
     my $dsn           = $self->require_argument('dsn');
     my $analysis_name = $self->param('analysis'); # defaults to *everything*
     my $feature_kind  = $self->param('feature_kind')  || 'SimpleFeature';
-    my $sieve         = $self->param('sieve') || '';
+    my $type_id       = $self->param('type_id') || '';
     my $grouplabel    = $self->param('grouplabel') || '';
 
     my $das = Bio::Das::Lite->new({
@@ -349,7 +334,7 @@ sub get_requested_features {
     my $features = $self->fetch_mapped_features_das(
         'get_all_features_via_DAS',
         [$self, $das, $chr_name, $analysis_name,
-         $feature_kind, $sieve, $grouplabel],
+         $feature_kind, $type_id, $grouplabel],
         $map);
 
     return $features;
