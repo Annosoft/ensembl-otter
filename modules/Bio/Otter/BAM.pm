@@ -67,7 +67,15 @@ sub description {
 sub classification {
     my ($self) = @_;
 
-    return 'BAM', split m{\s*/\s*}, $self->description;
+    unless ($self->{'_classification_array'}) {
+        if (my $class = $self->{'classification'}) {
+            $self->{'_classification_array'} = [split /\s*>\s*/, $class];
+        }
+        else {
+            $self->{'_classification_array'} = ['misc'];
+        }
+    }
+    return @{ $self->{'_classification_array'} };
 }
 
 sub file {
