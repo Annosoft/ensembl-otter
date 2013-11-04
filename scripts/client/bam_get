@@ -136,7 +136,7 @@ sub _print_feature {
     };
 
     # only add "cigar_bam" if the alignment is gapped
-    my $cigar_bam = feature->cigar_str;
+    my $cigar_bam = $feature->cigar_str;
     $attribute_hash->{'cigar_bam'} = $cigar_bam
         if $cigar_bam =~ /M.*M/;
 
