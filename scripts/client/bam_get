@@ -130,11 +130,15 @@ sub _print_feature {
         Name       => $feature->name,
         Align      => \ @align_fields,
         Length     => $feature->l_qseq,
-        cigar_bam  => $feature->cigar_str,
         Gap        => join(' ', @gap),
         Target     => \ @target_fields,
         sequence   => $query->seq->seq,
     };
+
+    # only add "cigar_bam" if the alignment is gapped
+    my $cigar_bam = feature->cigar_str;
+    $attribute_hash->{'cigar_bam'} = $cigar_bam
+        if $cigar_bam =~ /M.*M/;
 
     my $strand = $query->strand;
     my $phase = $feature->phase;
