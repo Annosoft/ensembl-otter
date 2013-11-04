@@ -104,13 +104,9 @@ sub _print_feature {
     my ($score) = $feature->get_tag_values('AS');
     my $query = $feature->query;
 
-    my @align_fields = ( $query->start, $query->end );
-    my @target_fields = ( $query->name, $query->start, $query->end );
-    my $query_strand = $query->strand;
-    if ($query_strand) {
-        push @align_fields, $query_strand;
-        push @target_fields, $query_strand;
-    }
+    my $strand = '+';
+    my @align_fields = ( $query->start, $query->end, $strand );
+    my @target_fields = ( $query->name, $query->start, $query->end, $strand );
 
     # $feature->cigar_str has the wrong format for the Gap tag
     # (eg. 76M instead of M76) so we have to build it from
@@ -121,9 +117,6 @@ sub _print_feature {
     my @gap = map {
         ($_->[0] eq 'S') ? ( ) : ( join '', @{$_} );
     } @{$feature->cigar_array};
-    if ($query_strand == -1) {
-        @gap = reverse @gap;
-    }
 
     my $attribute_hash = {
         Class      => 'Sequence',
@@ -140,7 +133,6 @@ sub _print_feature {
     $attribute_hash->{'cigar_bam'} = $cigar_bam
         if $cigar_bam =~ /M.*M/;
 
-    my $strand = $query->strand;
     my $phase = $feature->phase;
 
     print $gff_format->gff_line(
