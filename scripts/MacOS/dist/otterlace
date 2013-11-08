@@ -3,7 +3,9 @@
 # Work out where we now live
 macos_dir=`dirname "$0"`
 contents_dir=`dirname "$macos_dir"`
-resources_dir="$contents_dir/Resources"
+# We try to work from an absolute rather than relative path:
+raw_resources_dir="$contents_dir/Resources"
+resources_dir="$( cd "${raw_resources_dir}" 2>/dev/null && pwd -P )"
 bin_dir="$resources_dir/bin"
 
 export PATH="$bin_dir:$PATH"
