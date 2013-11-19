@@ -38,17 +38,12 @@ gdk-pixbuf-query-loaders > "$GDK_PIXBUF_MODULE_FILE"
 
 # Create config files for pango font handling library
 pango_module_file="$dot_otter_etc/pango.modules"
-pangox_alias_file="$dot_otter_etc/pangox.aliases"
 export PANGO_RC_FILE="$dot_otter_etc/pangorc"
-cp -f "$resources_dir/etc/pango/pangox.aliases" "$pangox_alias_file"
 
 cat > $PANGO_RC_FILE << PANGO_RC
 
 [Pango]
 ModuleFiles = $pango_module_file
-
-[PangoX]
-AliasFiles = $pangox_alias_file
 
 PANGO_RC
 
