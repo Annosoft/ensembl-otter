@@ -33,7 +33,7 @@ export DYLD_FALLBACK_LIBRARY_PATH="$dyld_path"
 # its bitmap image format loaders
 export GDK_PIXBUF_MODULE_FILE="$dot_otter_etc/gdk-pixbuf.loaders"
 
-GDK_PIXBUF_MODULEDIR="$resources_dir/lib/gtk-2.0/2.10.0/loaders" \
+GDK_PIXBUF_MODULEDIR="$resources_dir/lib/gdk-pixbuf-2.0/2.10.0/loaders" \
 gdk-pixbuf-query-loaders > "$GDK_PIXBUF_MODULE_FILE"
 
 # Create config files for pango font handling library
