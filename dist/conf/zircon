@@ -1,4 +1,4 @@
-master
+0273c552f0147627b690da89fdfb6b7937a0dc9c
 
 Note that otterlace_build before tag otter/75 will ignore this file
 and (if zircon is included) it would be from master.
