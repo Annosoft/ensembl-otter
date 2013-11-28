@@ -16,7 +16,6 @@ my @server_params = (
     qw(
     server_script
     process_gff_file
-    gff_source
     ),
 
     # common
@@ -28,6 +27,8 @@ my @server_params = (
     filter_module
     swap_strands
     url_string
+    gff_source
+    gff_feature
     ),
 
     # GFF
@@ -407,12 +408,30 @@ sub script_arguments {
 }
 
 sub gff_source {
-    my ($self) = @_;
-    return $self->name;
+    my ($self, $source) = @_;
+    
+    if ($source) {
+        $self->{'_gff_source'} = $source;
+    }
+    return $self->{'_gff_source'} || $self->name;
+}
+
+sub gff_feature {
+    my ($self, $feature) = @_;
+    
+    if ($feature) {
+        $self->{'_gff_feature'} = $feature;
+    }
+    return $self->{'_gff_feature'} || $self->name;
 }
 
 sub script_name {
-    return "filter_get"; # see also Bio::Otter::Utils::About
+    my ($self, $script) = @_;
+
+    if ($script) {
+        $self->{'_script_name'} = $script;
+    }
+    return $self->{'_script_name'} || "filter_get"; # see also Bio::Otter::Utils::About
 }
 
 1;
