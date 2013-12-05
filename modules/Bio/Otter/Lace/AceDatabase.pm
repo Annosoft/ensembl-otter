@@ -35,9 +35,6 @@ Bio::Otter::Debug->add_keys(qw(
     Zircon
     ));
 
-Bio::Otter::Debug->set('Zircon,XRemote'); # XXX:TMP B:O:L:Defaults [client]debug is ineffective
-
-
 sub new {
     my ($pkg) = @_;
 
