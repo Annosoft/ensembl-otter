@@ -16,8 +16,8 @@ use Bio::Vega::DBSQL::AssemblyTagAdaptor;
 use Bio::Vega::DBSQL::ContigLockAdaptor;
 use Bio::Vega::DBSQL::MetaContainer;
 use Bio::Vega::DBSQL::SliceAdaptor;
-use Bio::Vega::DBSQL::SplicedAlignFeature::DnaAdaptor;
-use Bio::Vega::DBSQL::SplicedAlignFeature::ProteinAdaptor;
+#use Bio::Vega::DBSQL::SplicedAlignFeature::DnaAdaptor;
+#use Bio::Vega::DBSQL::SplicedAlignFeature::ProteinAdaptor;
 
 use base 'Bio::EnsEMBL::DBSQL::DBAdaptor';
 

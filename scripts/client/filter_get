@@ -4,73 +4,129 @@ use strict;
 use warnings;
 
 use Digest::MD5 qw(md5_hex);
-use URI::Escape qw(uri_escape);
+use URI::Escape qw(uri_escape uri_unescape);
+use Time::HiRes qw(time);
 
-use Bio::Otter::Utils::GetScript;
+use Bio::Otter::Lace::DB::ColumnAdaptor;
 
 sub do_requires {
-    my ($helper) = @_;
-
     require LWP::UserAgent;
     require HTTP::Request;
     require HTTP::Cookies::Netscape;
-    $helper->do_requires;
-
+    require DBI;
     return;
 }
 
 sub show_version {
     # Check dependencies, report (arbitrary) version
-    my ($helper) = @_;
-    do_requires($helper);
+    do_requires();
     my $dbh = DBI->connect("dbi:SQLite:dbname=:memory:","","");
-    print "filter_get 0.5\n";
+    print "filter_get 0.5 77.08\n";
     exit 0;
+}
+
+my $gff_source;
+sub _log_prefix {
+    my @t = localtime;
+    my @date = ( 1900+$t[5], $t[4]+1, @t[3,2,1,0] );
+    return sprintf "%4d-%02d-%02d %02d:%02d:%02d: %6d: %-35s "
+        , @date, $$, ($gff_source || '???');
+}
+
+my $log_file;
+
+sub log_message {
+    my ($message) = @_;
+    return unless $log_file;
+    printf $log_file "%s: %s\n", _log_prefix, $message;
+    return;
+}
+
+sub log_chunk {
+    my ($prefix, $chunk) = @_;
+    return unless $log_file;
+    my $prefix_full = sprintf "%s: %s: ", _log_prefix, $prefix;
+    chomp $chunk;
+    $chunk .= "\n";
+    $chunk =~ s/^/$prefix_full/gm;
+    print $log_file $chunk;
+    return;
+}
+
+sub time_diff_for {
+    my ($code) = @_;
+    my $start_time = time;
+    $code->();
+    my $end_time = time;
+    
+    return sprintf "time (sec): %.3f", $end_time - $start_time;
 }
 
 my $LOG     = 1;
 
-my $helper = Bio::Otter::Utils::GetScript->new;
-my $args   = $helper->parse_uri_style_args;
+my %args;
+foreach my $pair (@ARGV) {
+    my ($key, $val) = split(/=/, $pair);
+    $args{uri_unescape($key)} = uri_unescape($val);
+}
 
-show_version($helper) if exists $args->{'--version'}; # exits
+show_version() if exists $args{'--version'}; # exits
+
+$gff_source = $args{gff_source};
 
 # test case
-die "failing as required" if $args->{'fail'};
-
-my $gff_source = $args->{gff_source};
-$helper->log_context($gff_source);
-
+die "failing as required" if $args{'fail'};
 
 # pull off arguments meant for us
 
-my     ($url_root, $server_script, $session_dir, $cookie_jar, $process_gff)
-    = $helper->read_delete_args(
-    qw ( url_root   server_script   session_dir   cookie_jar   process_gff_file )
-    );
+my $url_root        = delete $args{'url_root'};
+my $server_script   = delete $args{'server_script'};
+my $session_dir     = delete $args{'session_dir'};
+my $cookie_jar      = delete $args{'cookie_jar'};
+my $process_gff     = delete $args{'process_gff_file'};
 
-$helper->use_session_dir($session_dir);
+chdir($session_dir) or die "Could not chdir to '$session_dir'; $!";
 
-$helper->open_log('gff_log.txt');
-$helper->log_message("starting");
-$helper->log_arguments;
+my $log_path = 'gff_log.txt';
+open $log_file, '>>', $log_path
+    or die "failed to open the log file '${log_path}'";
+{
+    ## no critic (InputOutput::ProhibitOneArgSelect)
+    my $old_fh = select $log_file;
+    $| = 1;
+    select $old_fh;
+}
+log_message "starting";
 
-$args->{log} = 1 if $LOG; # enable logging on the server
+# log the arguments
+log_message sprintf "argument: %s: %s", $_, $args{$_} for sort keys %args;
+
+$args{log} = 1 if $LOG; # enable logging on the server
 
 # concatenate the rest of the arguments into a parameter string
 
 my $params = join '&', map {
-    uri_escape($_).'='.uri_escape($args->{$_});
-} sort keys %$args;
+    uri_escape($_).'='.uri_escape($args{$_});
+} sort keys %args;
 
 my $gff_filename = sprintf '%s_%s.gff', $gff_source, md5_hex($params);
 
-my $top_dir = $helper->mkdir_tested('gff_cache');
+my $top_dir = 'gff_cache';
+
+unless (-d $top_dir) {
+    # Cannot check return value from mkdir() because another instance of the
+    # script is likely to have made the directory since many run in parallel!
+    mkdir $top_dir;
+    unless (-d $top_dir) {
+        die "Failed to create toplevel cache directory: $!\n";
+    }
+}
+
 my $cache_file = $top_dir.'/'.$gff_filename;
 
 if (-e $cache_file) {
     # cache hit
-    $helper->log_message("cache file: $gff_filename: cache hit");
+    log_message "cache file: $gff_filename: cache hit";
     open my $gff_file, '<', $cache_file or die "Failed to open cache file: $!\n";
     while (<$gff_file>) { print; }
     close $gff_file or die "Failed to close cache file: $!\n";
@@ -81,9 +137,9 @@ if (-e $cache_file) {
 # cache miss
 
 # only require these packages now, so we don't take the import hit on a cache hit
-do_requires($helper);
+do_requires();
 
-$helper->log_message("cache file: $gff_filename: cache miss");
+log_message "cache file: $gff_filename: cache miss";
 
 my $request = HTTP::Request->new;
 
@@ -93,7 +149,7 @@ $request->method('GET');
 
 my $url = $url_root . '/' . $server_script . '?' . $params;
 
-$helper->log_message("http: URL: $url");
+log_message "http: URL: $url";
 
 $request->uri($url);
 
@@ -108,16 +164,16 @@ my $ua = LWP::UserAgent->new(
 );
 
 # do the request
+log_message "http: start";
 my $response;
-$helper->time_diff_for( 'http', sub {
+my $request_time = time_diff_for sub {
     $response = $ua->request($request);
     die "No response for $gff_source\n" unless $response;
-    $helper->log_message(sprintf("http: bytes: %d (decoded), %d (raw)  status: %s",
-                                 length($response->decoded_content),
-                                 length($response->content),
-                                 $response->status_line)
-        );
-} );
+};
+log_message sprintf("http: finish: %s  bytes: %d (decoded), %d (raw)  status: %s",
+                    $request_time,
+                    length($response->decoded_content), length($response->content),
+                    $response->status_line);
 
 if ($response->is_success) {
 
@@ -125,23 +181,51 @@ if ($response->is_success) {
     die "Unexpected response for $gff_source: $gff\n" unless $gff =~ /EnsEMBL2GFF/;
 
     # cache the result
-    $helper->time_diff_for( 'caching', sub {
+    log_message "caching: start";
+    my $cache_time = time_diff_for sub {
         open my $cache_file_h, '>', $cache_file or die "Cannot write to cache file '$cache_file'; $!\n";
         print $cache_file_h $gff;
         close $cache_file_h or die "Error writing to '$cache_file'; $!";
-    } );
+    };
+    log_message "caching: finish: $cache_time";
 
     # update the SQLite db
-    $helper->update_local_db($gff_source, $cache_file, $process_gff);
+    log_message "SQLite update: start";
+    my $sqlite_update_time = time_diff_for sub {
+        my $dbh = DBI->connect("dbi:SQLite:dbname=$session_dir/otter.sqlite", undef, undef, {
+            RaiseError => 1,
+            AutoCommit => 1,
+        });
+        my $db_filter_adaptor = Bio::Otter::Lace::DB::ColumnAdaptor->new($dbh);
+        unless (eval {
+            # No transaction!  Make only one statement.  Transactions
+            # require more complex retrying when database is busy.
+            my $rv = $db_filter_adaptor->update_for_filter_get
+              ($gff_source, # WHERE: name
+               $cache_file, # SET: gff_file, status = 'Visible'
+               $process_gff || 0); # SET: process_gff flag
+            die "Changed $rv rows" unless 1 == $rv;
+            1;
+             } ) {
+            my $err = $@;
+            my $msg = "Update of otter_filter table in SQLite db failed; $err";
+            log_message $msg;
+            die $msg;
+        }
+        $dbh->disconnect;
+    };
+    log_message "SQLite update: finish: $sqlite_update_time";
 
     # if (rand() < 0.5) {
     #     die "Horribly";
     # }
-
+    
     # Send data to zmap on STDOUT
-    $helper->time_diff_for( 'sending data', sub {
+    log_message "sending data: start";
+    my $send_data_time = time_diff_for sub {
         print STDOUT $gff;
-    } );
+    };
+    log_message "sending data: finish: $send_data_time";
 
     # zmap waits for STDOUT to be closed as an indication that all
     # data has been sent, so we close the handle now so that zmap
@@ -152,7 +236,7 @@ if ($response->is_success) {
 else {
 
     my $res = $response->content;
-    $helper->log_chunk('http: error', $res);
+    log_chunk 'http: error', $res;
 
     my $err_msg;
 
