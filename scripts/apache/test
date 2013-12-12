@@ -8,7 +8,7 @@ use strict;
 use warnings;
 
 BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
-use SangerPaths qw{ core bioperl123 ensembl72 otter77 humpub };
+use SangerPaths qw{ core bioperl123 ensembl73 otter77 humpub };
 
 use YAML 'Dump';
 use Bio::Otter::Server::Test;
