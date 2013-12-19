@@ -131,6 +131,7 @@ sub populate {
     sub save_accession_info {
         my ($self, $accession_sv, $taxon_id, $evi_type, $description, $source_db, $length) = @_;
         my $sth = $save_acc_info_sth{$self} ||= $DB{$self}->dbh->prepare($save_acc_info_sql);
+        confess "Cannot save without evi_type" unless defined $evi_type;
 
         return $sth->execute($accession_sv, $taxon_id, $evi_type, $description, $source_db, $length);
     }

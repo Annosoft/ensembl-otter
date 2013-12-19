@@ -28,34 +28,52 @@ use Try::Tiny;
         OTF_Protein      => 'Protein',
     );
 
-
-    sub store_hit_data_from_gff {
-        my ($accession_type_cache, $gff_file) = @_;
-
-        $accession_type_cache->begin_work;
-
-        open my $gff_fh, '<', $gff_file or confess "Can't read GFF file '$gff_file'; $!";
-        while (<$gff_fh>) {
-            next if /^\s*#/;
-            my ($seq_name, $source, $feat_type, $start, $end, $score, $strand, $frame, $attrib)
-                = parse_gff_line($_);
-            next unless $attrib->{'Name'};
-            $accession_type_cache->save_accession_info(
-                $attrib->{'Name'},
-                $attrib->{'Taxon_ID'},
-                substr($source, 0, 4) eq 'EST_' ? 'EST' : $evidence_type{$source},
-                $attrib->{'Description'},
-                $attrib->{'DB_Name'},
-                $attrib->{'Length'},
-                );
-        }
-        close $gff_fh or confess "Error reading GFF file '$gff_file'; $!";
-
-        $accession_type_cache->commit;
-
-        return;
+    # Some GFFs have other fields (feat_type=protein_match,
+    # DB_Name=TrEMBL, Class=Protein) which should be indicative.
+    sub __source2type {
+        my ($source) = @_;
+        return 'EST' if substr($source, 0, 4) eq 'EST_';
+        return $evidence_type{$source};
     }
 }
+
+sub store_hit_data_from_gff {
+    my ($accession_type_cache, $gff_file) = @_;
+
+    $accession_type_cache->begin_work;
+
+    my %fail;
+    open my $gff_fh, '<', $gff_file or confess "Can't read GFF file '$gff_file'; $!";
+    while (<$gff_fh>) {
+        next if /^\s*#/;
+        my ($seq_name, $source, $feat_type, $start, $end, $score, $strand, $frame, $attrib)
+            = parse_gff_line($_);
+        next unless $attrib->{'Name'};
+        my $evi_type = __source2type($source);
+        if (!$evi_type) {
+            $fail{$source} ||= "Cannot convert source=$source to an evidence type\nFirst is $gff_file:$.:$_";
+            next;
+        }
+        $accession_type_cache->save_accession_info(
+            $attrib->{'Name'},
+            $attrib->{'Taxon_ID'},
+            $evi_type,
+            $attrib->{'Description'},
+            $attrib->{'DB_Name'},
+            $attrib->{'Length'},
+            );
+    }
+    close $gff_fh or confess "Error reading GFF file '$gff_file'; $!";
+
+    $accession_type_cache->commit;
+
+    foreach my $prob (sort values %fail) {
+        warn $prob; # warn because it is only a cache save fail
+    }
+
+    return;
+}
+
 
 sub make_ace_transcripts_from_gff {
     my ($gff_file) = @_;
