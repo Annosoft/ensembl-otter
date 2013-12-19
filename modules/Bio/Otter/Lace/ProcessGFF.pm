@@ -26,6 +26,8 @@ use Try::Tiny;
         OTF_EST          => 'EST',
         OTF_mRNA         => 'cDNA',
         OTF_Protein      => 'Protein',
+        SwissProt_old    => 'Protein', # tmp RT#370164 RT#359109
+        TrEMBL_old       => 'Protein',
     );
 
 
