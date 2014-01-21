@@ -1,4 +1,4 @@
-experimental/db-portability/73
+refs/tags/cvs/attic/branch-e73-db-portability
 
 # This is the version of EnsEMBL that the Otterlace client uses.  The
 # install script uses this to check out the correct branch from the
