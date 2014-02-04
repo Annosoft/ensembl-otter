@@ -201,7 +201,9 @@ sub fetch_SimpleFeatures {
 sub fetch_Genes {
     my ($self) = @_;
 
-    my $gene_list = $self->slice->get_all_Genes;
+    my $slice = $self->slice;
+    my $ga =  $slice->adaptor->db->get_GeneAdaptor();
+    my $gene_list = $ga->fetch_all_by_Slice($slice);
     $self->_gene_list($gene_list);
 
     return @$gene_list;
