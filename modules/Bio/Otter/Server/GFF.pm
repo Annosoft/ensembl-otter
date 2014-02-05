@@ -91,29 +91,10 @@ sub get_requested_features {
 
     foreach my $analysis_name (@analysis_names) {
         foreach my $feature_kind (@feature_kinds) {
-            my $param_descs = $call_args->{$feature_kind};
             my $getter_method = "get_all_${feature_kind}s";
-
-            my @param_list = ();
-            foreach my $param_desc (@$param_descs) {
-                my ($param_name, $param_def_value, $param_separator) = @$param_desc;
-
-                my $param_value = (scalar(@$param_desc)==1)
-                    ? $self->require_argument($param_name)
-                    : defined($self->param($param_name))
-                    ? $self->param($param_name)
-                    : $param_def_value;
-                if($param_value && $param_separator) {
-                    $param_value = [split(/$param_separator/,$param_value)];
-                }
-                $param_value = $analysis_name
-                    if $param_value && $param_value =~ /$analysis_name/;
-                push @param_list, $param_value;
-            }
-
+            my $param_list = $self->_param_list($analysis_name, $feature_kind);
             my $metakey = $self->param('metakey');
-            my $features = $self->fetch_mapped_features_ensembl($getter_method, \@param_list, $map, $metakey);
-
+            my $features = $self->fetch_mapped_features_ensembl($getter_method, $param_list, $map, $metakey);
             push @feature_list, @$features;
         }
     }
@@ -156,6 +137,31 @@ sub get_requested_features {
     }
 
     return \@feature_list;
+}
+
+sub _param_list {
+    my ($self, $analysis_name, $feature_kind) = @_;
+
+    my $param_descs = $call_args->{$feature_kind};
+    my @param_list = ( );
+
+    foreach my $param_desc (@$param_descs) {
+        my ($param_name, $param_def_value, $param_separator) = @$param_desc;
+
+        my $param_value = (scalar(@$param_desc)==1)
+            ? $self->require_argument($param_name)
+            : defined($self->param($param_name))
+            ? $self->param($param_name)
+            : $param_def_value;
+        if($param_value && $param_separator) {
+            $param_value = [split(/$param_separator/,$param_value)];
+        }
+        $param_value = $analysis_name
+            if $param_value && $param_value =~ /$analysis_name/;
+        push @param_list, $param_value;
+    }
+
+    return \ @param_list;
 }
 
 sub gff_header {
