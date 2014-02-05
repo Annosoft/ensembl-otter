@@ -35,8 +35,6 @@ my $call_args = {
         ['ditypes', undef, qr/,/],
         ['analysis' => undef],
     ],
-    VariationFeature => [
-    ],
 
     # Vega
     DnaDnaAlignFeature => [
@@ -89,11 +87,14 @@ sub get_requested_features {
     my $map = $self->make_map;
     my @feature_list = ();
 
+    my $metakey = $self->param('metakey');
     foreach my $analysis_name (@analysis_names) {
         foreach my $feature_kind (@feature_kinds) {
             my $getter_method = "get_all_${feature_kind}s";
-            my $param_list = $self->_param_list($analysis_name, $feature_kind);
-            my $metakey = $self->param('metakey');
+            my $param_list =
+                $feature_kind eq 'VariationFeature'
+                ? [ undef, undef, undef, "${metakey}_variation" ]
+                : $self->_param_list($analysis_name, $feature_kind);
             my $features = $self->fetch_mapped_features_ensembl($getter_method, $param_list, $map, $metakey);
             push @feature_list, @$features;
         }
