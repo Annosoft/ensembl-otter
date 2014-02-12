@@ -644,3 +644,8 @@ short_window_title_prefix=1
 timeout-ms=2000
 timeout-retries=10
 rolechange-wait=500
+
+[RequestQueue]
+concurrent=12
+min-batch=4
+send-queued-callback-timeout-ms=500

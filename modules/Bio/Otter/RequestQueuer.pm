@@ -7,25 +7,30 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use Readonly;
 use Scalar::Util qw{ weaken };
 use Try::Tiny;
-
-Readonly my $MAX_CONCURRENT_REQUESTS => 12;
-Readonly my $REQUEST_MIN_BATCH_SIZE  =>  4;
-Readonly my $SEND_QUEUED_REQUESTS_CALLBACK_TIMEOUT_MILLISECS => 500;
 
 sub new {
     my ($pkg, $session) = @_;
 
+    my $client = $session->AceDatabase->Client;
     my $self = {
-        '_queue'   => [],
-        '_session' => $session,
+        '_session'          => $session,
+        '_queue'            => [],
         '_current_requests' => {},
+        '_cfg_concurrent'   => $client->config_section_value(RequestQueue => 'concurrent'),
+        '_cfg_min_batch'    => $client->config_section_value(RequestQueue => 'min-batch'),
+        '_cfg_send_queued_callback_timeout_ms' =>
+            $client->config_section_value(RequestQueue => 'send-queued-callback-timeout-ms'),
     };
     weaken($self->{_session});
+    bless $self, $pkg;
 
-    return bless $self, $pkg;
+    $self->_logger->debug('_cfg_concurrent: ', $self->_cfg_concurrent);
+    $self->_logger->debug('_cfg_min_batch:  ', $self->_cfg_min_batch);
+    $self->_logger->debug('_cfg_sqcbto_ms:  ', $self->_cfg_send_queued_callback_timeout_ms);
+
+    return $self;
 }
 
 sub request_features {
@@ -51,7 +56,7 @@ sub _send_queued_requests {
     }
 
     my $slots = $self->_slots_available;
-    if ($slots < $REQUEST_MIN_BATCH_SIZE) {
+    if ($slots < $self->_cfg_min_batch) {
         # This is only really required to avoid excessive interleaving in Zircon :-(
         $self->_logger->debug("_send_queued_requests: min batch size not reached");
         return;
@@ -86,7 +91,7 @@ sub _send_queued_requests {
                 unshift @$queue, @to_send;
                 # Set a timeout in case we're not called before
                 my $id = $self->session->top_window->after(
-                    $SEND_QUEUED_REQUESTS_CALLBACK_TIMEOUT_MILLISECS,
+                    $self->_cfg_send_queued_callback_timeout_ms,
                     sub {
                         $self->_logger->debug('_send_queued_requests: timeout callback');
                         return $self->_send_queued_requests;
@@ -138,7 +143,7 @@ sub flush_current_requests {
 sub _slots_available {
     my ($self) = @_;
     my $n_current = scalar keys %{$self->{_current_requests}};
-    my $available = $MAX_CONCURRENT_REQUESTS - $n_current;
+    my $available = $self->_cfg_concurrent - $n_current;
     $available = 0 if $available < 0;
     return $available;
 }
@@ -171,6 +176,27 @@ sub _current_request {
 sub _clear_request {
     my ($self, $feature) = @_;
     return delete $self->{'_current_requests'}->{$feature};
+}
+
+sub _cfg_concurrent {
+    my ($self, @args) = @_;
+    ($self->{'_cfg_concurrent'}) = @args if @args;
+    my $_cfg_concurrent = $self->{'_cfg_concurrent'};
+    return $_cfg_concurrent;
+}
+
+sub _cfg_min_batch {
+    my ($self, @args) = @_;
+    ($self->{'_cfg_min_batch'}) = @args if @args;
+    my $_cfg_min_batch = $self->{'_cfg_min_batch'};
+    return $_cfg_min_batch;
+}
+
+sub _cfg_send_queued_callback_timeout_ms {
+    my ($self, @args) = @_;
+    ($self->{'_cfg_send_queued_callback_timeout_ms'}) = @args if @args;
+    my $_cfg_send_queued_callback_timeout_ms = $self->{'_cfg_send_queued_callback_timeout_ms'};
+    return $_cfg_send_queued_callback_timeout_ms;
 }
 
 sub _logger {
