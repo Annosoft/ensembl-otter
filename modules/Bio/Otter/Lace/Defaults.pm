@@ -646,6 +646,8 @@ timeout-retries=10
 rolechange-wait=500
 
 [RequestQueue]
-concurrent=12
+# just send everything for now
+# concurrent=12
+concurrent=10000
 min-batch=4
 send-queued-callback-timeout-ms=500
