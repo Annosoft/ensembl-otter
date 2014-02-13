@@ -179,7 +179,8 @@ sub write_region {
 
         ##fetch database genes and compare to find the new/modified/deleted genes
         warn "Fetching database genes for comparison...\n";
-        my $db_genes = $db_slice->get_all_Genes || [];
+        my $ga =  $db_slice->adaptor->db->get_GeneAdaptor();
+        my $db_genes = $ga->fetch_all_by_Slice($db_slice) || [];
         $self->_strip_incomplete_genes($db_genes);
         warn "Comparing " . scalar(@$db_genes) . " old to " . scalar(@new_genes) . " new gene(s)...\n";
 
