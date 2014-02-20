@@ -35,9 +35,6 @@ Bio::Otter::Debug->add_keys(qw(
     Zircon
     ));
 
-Bio::Otter::Debug->set('Zircon,XRemote'); # XXX:TMP B:O:L:Defaults [client]debug is ineffective
-
-
 sub new {
     my ($pkg) = @_;
 
@@ -724,10 +721,10 @@ sub generate_XML_from_acedb {
     # Pass the Ensembl objects to the XML formatter
     my $region = Bio::Vega::Region->new;
     $region->species($self->smart_slice->dsname);
-    $region->slice(           $converter->ensembl_slice     );
-    $region->clone_sequences( @{$converter->clone_seq_list} );
-    $region->genes(           @{$converter->genes}          );
-    $region->seq_features(    @{$converter->seq_features}   );
+    $region->slice(           $converter->ensembl_slice           );
+    $region->clone_sequences( @{$converter->clone_seq_list || []} );
+    $region->genes(           @{$converter->genes          || []} );
+    $region->seq_features(    @{$converter->seq_features   || []} );
 
     my $formatter = Bio::Vega::Transform::XML->new;
     $formatter->region($region);
