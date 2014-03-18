@@ -820,17 +820,17 @@ sub close_GenomicFeaturesWindow {
         my $finder = Hum::Analysis::Factory::ExonLocator->new;
         $finder->genomic_Sequence($assembly->Sequence);
 
-        my( @msg, @new_subseq, $i );
+        my (@msg, @new_subseq);
         foreach my $sub (@holding_pen) {
             my $name = $sub->name;
             my ($new_exons, $strand) = @{_new_exons_strand($finder, $sub)};
             if (@{$new_exons}) {
                 my $new = $sub->clone;
-                my( $temp_name );
-                do {
-                    $temp_name = sprintf "TEMP-%03d", ++$i;
-                } while ($self->get_SubSeq($temp_name));
-                #my $temp_name = sprintf "TEMP-%03d", ++$i;
+                my $temp_name;
+                for (my $i=0; !defined $temp_name || $self->get_SubSeq($temp_name); $i++) {
+                    $temp_name = $sub->name;
+                    $temp_name .= "_$i" if $i; # invalid-dup suffix when needed
+                }
                 $new->name($temp_name);
                 $new->strand($strand);
                 $new->replace_all_Exons(@{$new_exons});
@@ -849,7 +849,7 @@ sub close_GenomicFeaturesWindow {
                 ### set locus gene_type_prefix() here ?
                 $self->add_SubSeq($new);
                 push(@new_subseq, $new);
-                print STDERR $new->ace_string;
+                print STDERR "Internal paste result:\n", $new->ace_string;
             } else {
                 $self->message("Got zero exons from realigning '$name'");
             }
