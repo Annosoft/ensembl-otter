@@ -19,21 +19,22 @@ use base ('Bio::Otter::MFetcher');
 
 
 BEGIN {
-    my $csn;
-    ($csn) = $ENV{'SCRIPT_NAME'} =~ m{([^/]+)$} if defined $ENV{'SCRIPT_NAME'};
     $SIG{__WARN__} = sub { ## no critic (Variables::RequireLocalizedPunctuationVars)
         my ($line) = @_;
-        $line = sprintf "[%s] %s", $csn, $line if defined $csn;
-        warn $line;
+        warn "pid $$: $line";
+        # pid is sufficient to re-thread lines on one host,
+        # and the script name is given once by a BEGIN block
         return;
     };
 }
 
+# Under webvm.git, Otter::LoadReport gives more info and is probably
+# loaded by the CGI script stub.
 BEGIN {
-    warn "otter_srv script start: $0\n";
+    warn "otter_srv script start: $0\n" unless Otter::LoadReport->can('show');
 }
 END {
-    warn "otter_srv script end: $0\n";
+    warn "otter_srv script end: $0\n" unless Otter::LoadReport->can('show');
 }
 
 our $ERROR_WRAPPING_ENABLED;
