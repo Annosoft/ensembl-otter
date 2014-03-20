@@ -845,8 +845,8 @@ sub close_GenomicFeaturesWindow {
                         $new->translation_region($new->start, $new->end);
                     };
                 }
-                $new->Locus($self->get_Locus($sub->Locus->name));
-                ### set locus gene_type_prefix() here ?
+                my $paste_locus = $self->_paste_locus($sub->Locus);
+                $new->Locus($paste_locus);
                 $self->add_SubSeq($new);
                 push(@new_subseq, $new);
                 print STDERR "Internal paste result:\n", $new->ace_string;
@@ -882,6 +882,25 @@ sub _new_exons_strand {
     }
     return [ \@new_exons, $strand ];
 }
+
+sub _paste_locus {
+    my ($self, $source_locus) = @_;
+    # similar to (Hum::Ace::Locus)->new_from_Locus
+    my $dup_locus = Hum::Ace::Locus->new;
+    $dup_locus->set_aliases( $source_locus->list_aliases );
+    $dup_locus->set_remarks( $source_locus->list_remarks );
+    $dup_locus->set_annotation_remarks( $source_locus->list_annotation_remarks );
+    # we don't copy otter_id (this is copy-paste, not cut-paste) or
+    # author_name (will be replaced)
+    foreach my $method (qw( name description gene_type_prefix known )) {
+        $dup_locus->$method( $source_locus->$method );
+    }
+    $dup_locus->set_annotation_in_progress;
+    # return either the locus we already have with the same name, or
+    # put $dup_locus in the cache and use that
+    return $self->get_Locus($dup_locus);
+}
+
 
 sub exit_save_data {
     my ($self) = @_;
