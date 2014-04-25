@@ -657,6 +657,7 @@ sub blixem_config {
             'user-fetch'            => 'internal',
             # ZMap stylesfile is used to pick up colours for transcripts
             'stylesfile'            => $self->stylesfile,
+            ($self->colour ? ('session-colour'  => $self->colour) : ()),
         },
 
 
