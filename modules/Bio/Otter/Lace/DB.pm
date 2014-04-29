@@ -5,7 +5,7 @@ package Bio::Otter::Lace::DB;
 
 use strict;
 use warnings;
-use Carp;
+use Carp qw( confess cluck );
 use DBI;
 
 use Bio::Otter::Lace::DB::ColumnAdaptor;
@@ -142,6 +142,14 @@ sub init_db {
     my ($self, $client) = @_;
 
     my $file = $self->file or confess "Cannot create SQLite database: file not set";
+
+    my $done_file = $file;
+    $done_file =~ s{/([^/]+)$}{.done/$1};
+    if (!-f $file && -f $done_file) {
+        cluck "Running late?\n  Absent: $file\n  Exists: $done_file";
+        # Diagnostics because I saw it after RT395938 Zircon 13e593c10ce4cb1ccdfd362a293a1e940e24e26d
+    }
+
     my $dbh = DBI->connect("dbi:SQLite:dbname=$file", undef, undef, {
         RaiseError => 1,
         AutoCommit => 1,
