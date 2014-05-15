@@ -1,4 +1,4 @@
-master
+82a2fd107b43215a7678823c16cc88e284c9ad58
 
 Note that otterlace_build before tag otter/79 will ignore this file
 and instead take PerlModules from the internal Anacode CVS
