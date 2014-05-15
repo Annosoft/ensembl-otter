@@ -29,12 +29,8 @@ sub new {
         -fill => 'x',
         );
 
-    my $w = $tk->screenwidth;
-    $w = 800 if $w > 800;
-    my $h = $tk->screenheight; # RT#355409
-
     # ... before we make the canvas
-    my $self = CanvasWindow->new($tk, $w, $h, 'ose');
+    my $self = CanvasWindow->new($tk, 800, 400, 'ose');
     bless($self, $pkg);
 
     my $bottom_frame = $tk->Frame->pack(
@@ -250,16 +246,19 @@ sub initialize {
     $self->colour_init;
     $self->calculate_text_column_sizes;
     $self->fix_window_min_max_sizes;
-    $self->redraw;
+    $self->redraw; # calls update via set_scroll_region_and_maxsize
 
-    # Window is already full screen height. Set y=0.  RT#355409
+    # Set window to full screen height, y=0.  RT#355409
+    my $w = $top->screenwidth;
+    $w = 800 if $w > 800;
+    my $h = $top->screenheight;
+
     my $x = $top->x;
-    my $w = $top->width;
     my $new_x = $top->screenwidth - $w;
     $new_x = $x if $x < $new_x;
     $x = 0 if $x < 0;
     $top->withdraw;
-    $top->geometry("+$x+0");
+    $top->geometry("${w}x$h+$x+0");
     $self->deiconify_and_raise;
 
     return;
