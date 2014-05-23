@@ -23,6 +23,9 @@ sub _map_new { ## no critic (Subroutines::RequireArgUnpacking)
 sub new_from_xml {
     my ($pkg, $xml) = @_;
 
+    local $XML::Simple::PREFERRED_PARSER = 'XML::Parser';
+    # configure expat for speed, also used in Bio::Vega::Transform
+
     my $data =
         XMLin($xml,
               ForceArray => [ qw( map maplet ) ],

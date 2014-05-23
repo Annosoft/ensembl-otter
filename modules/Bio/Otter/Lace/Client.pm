@@ -1074,6 +1074,9 @@ sub get_all_DataSets {
             $self->http_response_content(
                 'GET', 'get_datasets', {});
 
+        local $XML::Simple::PREFERRED_PARSER = 'XML::Parser';
+        # configure expat for speed, also used in Bio::Vega::Transform
+
         my $datasets_hash =
             XMLin($datasets_xml,
                   ForceArray => [ qw(
@@ -1200,6 +1203,9 @@ sub get_all_SequenceSets_for_DataSet {
               'dataset' => $dataset_name,
           });
 
+  local $XML::Simple::PREFERRED_PARSER = 'XML::Parser';
+  # configure expat for speed, also used in Bio::Vega::Transform
+
   my $sequencesets_hash =
       XMLin($sequencesets_xml,
             ForceArray => [ qw(
@@ -1263,6 +1269,9 @@ sub get_all_CloneSequences_for_DataSet_SequenceSet {
             'sequenceset' => $sequenceset_name,
         }
     );
+
+  local $XML::Simple::PREFERRED_PARSER = 'XML::Parser';
+  # configure expat for speed, also used in Bio::Vega::Transform
 
   my $clonesequences_array =
       XMLin($clonesequences_xml,

@@ -43,6 +43,9 @@ sub get_sample_accessions {
         return;
     }
 
+    local $XML::Simple::PREFERRED_PARSER = 'XML::Parser';
+    # configure expat for speed, also used in Bio::Vega::Transform
+
     my $xml = $response->decoded_content;
     my $ref = XMLin($xml);
 
