@@ -37,6 +37,7 @@ my $_USERCFG_FN;     # for testing
     }
 }
 __init();
+__fast_ini();
 
 my @CLIENT_OPTIONS = qw(
     url=s
@@ -275,6 +276,19 @@ sub __options_from_file {
     return $ini;
 }
 
+
+sub __fast_ini {
+    # a heuristic to detect O(n^2) versions of Config::IniFiles and
+    # warn, to insulate against build regression
+    my $civ = Config::IniFiles->VERSION;
+    if ($civ =~ m{^\d+\.\d+$} && $civ < 2.84) {
+        warn "***\n*** Suspect we have the slow Config::IniFiles v$civ"
+          unless Config::IniFiles->can('_cache_purge');
+    } else {
+        warn "Config::IniFiles v$civ: unknown, is it a slow one?";
+    }
+    return;
+}
 
 
 ################################################
