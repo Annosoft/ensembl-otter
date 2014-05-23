@@ -597,6 +597,9 @@ sub ace_config {
     if (@$dna) {
         $dna_slice_name = sprintf '%s-DNA', $slice_name;
         unshift @sources, $dna_slice_name;
+
+        # RT400142: we also put 'DNA' back in as the first item in the main stanza
+        unshift @$featuresets, @$dna;
     }
 
     my $config = {
