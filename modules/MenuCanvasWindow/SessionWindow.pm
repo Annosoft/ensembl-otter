@@ -2604,6 +2604,7 @@ sub _zmap_view_new {
             %{$self->zmap_view_arg_hash},
             '-handler' => $self,
         );
+    $self->deiconify_and_raise;
     return;
 }
 
