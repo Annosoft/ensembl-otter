@@ -760,6 +760,15 @@ sub general_http_dialog {
     $cl->debug(join "\n", $response->status_line, $response->headers_as_string)
       if $cl->is_debug;
 
+    # Check (possibly gzipped) lengths.  LWP truncates any excess
+    # bytes, but does nothing if there are too few.
+    my $got_len = length(${ $response->content_ref });
+    my $exp_len = $response->content_length; # from headers
+    $self->logger->logdie
+      ("Content length mismatch (before content-decode, if any).\n  Got $got_len bytes, headers promised $exp_len")
+      if defined $exp_len # it was not provided, until recently
+        && $exp_len != $got_len;
+
     return $response;
 }
 
