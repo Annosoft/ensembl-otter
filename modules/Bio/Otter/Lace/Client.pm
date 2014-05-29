@@ -681,7 +681,7 @@ sub otter_response_content { ## no critic (Subroutines::RequireFinalReturn)
 
     if (my ($content) = $xml =~ m{<otter[^\>]*\>\s*(.*)</otter>}s) {
         my $cl = $self->client_logger;
-        $cl->debug($self->response_info($scriptname, $params, length($content))) if $cl->is_debug;
+        $cl->debug($self->response_info($scriptname, $params, length($content).' (unwrapped)')) if $cl->is_debug;
         return $content;
     } else {
         $self->logger->logconfess("No <otter> tags in response content: [$xml]");
