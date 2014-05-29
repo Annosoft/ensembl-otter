@@ -286,9 +286,8 @@ sub send_response {
 }
 
 sub _send_response {
-
     my ($self, $response) = @_;
-
+    my $len = length($response);
     my $content_type = $self->content_type;
 
     if ($COMPRESSION_ENABLED && $self->compression) {
@@ -298,6 +297,8 @@ sub _send_response {
             $self->header(
                 -status           => 200,
                 -type             => $content_type,
+                -content_length   => length($gzipped),
+                -x_plain_length   => $len, # to assist debug on client
                 -content_encoding => 'gzip',
             ),
             $gzipped,
@@ -307,6 +308,7 @@ sub _send_response {
         print
             $self->header(
                 -status => 200,
+                -content_length => $len,
                 -type   => $content_type,
             ),
             $response,
