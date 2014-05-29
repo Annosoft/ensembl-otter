@@ -755,6 +755,11 @@ sub general_http_dialog {
         $self->logger->logdie("Problem with the web server");
     }
 
+    # for RT#401537 HTTP response truncation
+    my $cl = $self->client_logger;
+    $cl->debug(join "\n", $response->status_line, $response->headers_as_string)
+      if $cl->is_debug;
+
     return $response;
 }
 
