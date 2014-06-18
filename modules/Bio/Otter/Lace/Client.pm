@@ -653,6 +653,9 @@ sub setup_pfetch_env {
         $ENV{'PFETCH_WWW'} = $self->pfetch_url;
     }
 
+    # Belvu's fetch is manually switched (as of 4.26-62-g75547)
+    $ENV{'BELVU_FETCH_WWW'} = $self->pfetch_url.'?request=%s'; # RT#405174
+
     # Report the result to log.  RT#379752
     # Hardwired blixem config can affect some pfetches.
     my $new_PW = defined $ENV{'PFETCH_WWW'} ? "'$ENV{'PFETCH_WWW'}'" : "undef";

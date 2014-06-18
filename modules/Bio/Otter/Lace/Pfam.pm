@@ -11,36 +11,81 @@ package Bio::Otter::Lace::Pfam;
 use strict;
 use warnings;
 use Try::Tiny;
+use Log::Log4perl;
 use LWP;
 use LWP::UserAgent;
 use HTTP::Request;
 use XML::LibXML;
 use XML::LibXML::XPathContext;
+use Bio::Otter::Version;
 
-my $SEARCH_URL = 'http://pfam.sanger.ac.uk/search/sequence';
-my $HMM_URL    = 'http://pfam.sanger.ac.uk/family/hmm';
-my $SEED_URL   = 'http://pfam.sanger.ac.uk/family/alignment/download/format';
+my $SEARCH_URL = 'http://pfam.xfam.org/search/sequence';
+my $HMM_URL    = 'http://pfam.xfam.org/family/hmm';
+my $SEED_URL   = 'http://pfam.xfam.org/family/alignment/download/format';
 
 # full path for hmmalign
 my $HMMALIGN = 'hmmalign'; # see also Bio::Otter::Utils::About
 
 sub new {
-    my ($self) = @_;
-    return bless {}, $self;
+    my ($self, $tmpdir) = @_;
+    $self->logger->debug("new($tmpdir)");
+    unless (-d $tmpdir) {
+        mkdir $tmpdir, 0755
+          or die "Cannot mkdir $tmpdir: $!";
+    }
+    return bless { _tmpdir => $tmpdir }, $self;
 }
+
+sub _tmpdir { # under the session directory, so it will be cleared away for us
+    my ($self) = @_;
+    return $self->{_tmpdir};
+}
+
+sub _ua_request {
+    my ($self, $description, $req) = @_;
+    my $L = $self->logger;
+    $L->info($description, " to ", $req->uri);
+    my $ua = $self->_user_agent;
+    my $res = $ua->request($req);
+    $L->info("Response: ", $res->status_line, "; ", $res->content_length, " bytes");
+
+    my $show;
+    $show = 'debug' if $L->is_debug;
+    $show = 'info'  unless $res->is_success;
+
+    $L->$show(join "\n", "Request was",
+              $res->request->as_string) if $show;
+    $L->$show(join "\n", "Response was",
+              $res->status_line,
+              $res->headers_as_string,
+              $res->decoded_content) if $show;
+
+    die "$description failed ".$res->status_line unless $res->is_success;
+
+    return $res;
+}
+
+sub logger {
+    return Log::Log4perl->get_logger('otter.pfam');
+}
+
+sub _user_agent { # create and cache a user agent
+    my ($self) = @_;
+    return $self->{'_user_agent'} ||= do {
+        my $ua = LWP::UserAgent->new;
+        my $v = Bio::Otter::Version->version;
+        $ua->agent("Otterlace/$v ");
+        push @{ $ua->requests_redirectable }, 'POST'; # seeds and models return through a redirect
+        $ua->env_proxy;
+        $ua;
+    };
+}
+
 
 # submits the sequence search and returns the XML that comes back from the
 # server
 sub submit_search {
     my ($self, $seq) = @_;
-
-    # create a user agent
-    my $ua = LWP::UserAgent->new;
-    $ua->env_proxy;
-
-    # set up the request
-    my $req = HTTP::Request->new( POST => $SEARCH_URL );
-    $req->content_type('application/x-www-form-urlencoded');
 
     # build the query parameters. Use URI to format them nicely for LWP...
     my $uri = URI->new;
@@ -51,16 +96,25 @@ sub submit_search {
             output  => 'xml'
     );
     $uri->query_form( %param );
+
+    # set up the request
+    my $req = HTTP::Request->new( POST => $SEARCH_URL );
+    $req->content_type('application/x-www-form-urlencoded');
     $req->content( $uri->query );
 
-    # submit the request
-    my $res = $ua->request($req);
+    my $res = $self->_ua_request(submission => $req);
+    my $txt = $res->decoded_content;
 
-    # see if it was successful
-    warn 'submission failed: ' . $res->status_line
-      unless $res->is_success;
-    return $res->content;
+    if ($txt =~ m{<div class="error">(.*?)</div>}s) { # ugh
+        my $err = $1;
+        $err =~ s{<h2>\s*Error\s*</h2>}{};
+        $err =~ s{\A\s*|\s*\Z}{}g;
+        die "Pfam website error: $err\n";
+    }
+
+    return $txt;
 }
+
 
 # parses the submission XML and returns the URL for retrieving results and the
 # estimated job runtime
@@ -71,7 +125,7 @@ sub check_submission {
     my $parser = XML::LibXML->new();
     my $dom;
     try { $dom = $parser->parse_string($xml); }
-    catch { warn "couldn't parse XML response for submission: $_" };
+    catch { $self->logger->warn("couldn't parse XML response for submission: $_") };
     return unless $dom;
 
     # the root element is "jobs"
@@ -79,15 +133,16 @@ sub check_submission {
 
     # set up to use XPaths
     my $xc = XML::LibXML::XPathContext->new($root);
-    $xc->registerNs( 'p', 'http://pfam.sanger.ac.uk/' );
+    $xc->registerNs( 'p', 'http://pfam.xfam.org/' );
 
     # we're only running a single Pfam-A search, so there will be only one "job"
     # tag, so we know that these XPaths will each give us only a single node
     my $result_url     = $xc->findvalue('/p:jobs/p:job/p:result_url');
-    my $estimated_time = $xc->findvalue('/p:jobs/p:job/p:estimated_time');
+#    my $estimated_time = $xc->findvalue('/p:jobs/p:job/p:estimated_time'); # no longer present
+    die "Cannot recover result_url from XML\n$xml" unless $result_url;
     $result_url     =~ s/\s//g;
-    $estimated_time =~ s/\s//g;
-    return ( $result_url, $estimated_time );
+
+    return $result_url;
 }
 
 # polls the result URL as often as necessary (up to a hard limit) and returns
@@ -98,29 +153,28 @@ sub poll_results {
     # this is the request that we'll submit repeatedly
     my $req = HTTP::Request->new( GET => $result_url );
 
-    # create a user agent
-    my $ua = LWP::UserAgent->new;
-    $ua->env_proxy;
+    my $res = $self->_ua_request(poll => $req);
+    # at first,  202 (Accepted) with "PEND" or "RUN",
+    # then later 200 (OK) with XML
 
-    # submit the request...
-    my $res = $ua->request($req);
-    return $res->content;
+    return $res->decoded_content;
 }
 
 # parses the results XML and return a hash containing the hits and locations
 sub parse_results {
     my ($self, $results_xml) = @_;
-    print STDOUT "parsing XML search results\n";
+    $self->logger->info("parsing XML search results");
+
     my $parser = XML::LibXML->new();
     my $dom;
     try { $dom = $parser->parse_string($results_xml); }
-    catch { warn "couldn't parse XML response for results: $_" };
+    catch { $self->logger->warn("couldn't parse XML response for results: $_") };
     return unless $dom;
 
     # set up the XPath stuff for this document
     my $root = $dom->documentElement();
     my $xc   = XML::LibXML::XPathContext->new($root);
-    $xc->registerNs( 'p', 'http://pfam.sanger.ac.uk/' );
+    $xc->registerNs( 'p', 'http://pfam.xfam.org/' );
 
     # get all of the matches, that is the list of Pfam-A families that are found
     # on the sequence
@@ -167,12 +221,7 @@ sub parse_results {
 sub retrieve_pfam_hmm {
   my ($self, $domains) = @_;
 
-  # create a user agent
-  my $ua = LWP::UserAgent->new;
-  $ua->env_proxy;
-
   my %data;
-
   foreach my $domain (@$domains) {
 
     #----------------------------------------
@@ -190,13 +239,12 @@ sub retrieve_pfam_hmm {
                       entry => $domain );
     $req->content( $uri->query );
 
-    # submit the request
-    my $res = $ua->request( $req );
-
-    warn "$domain: HMM model retrieval failed: ". $res->status_line
-      unless $res->is_success;
-
-    $data{$domain} = $res->content;
+    try {
+        my $res = $self->_ua_request("Domain $domain hmm", $req);
+        $data{$domain} = $res->decoded_content;
+    } catch {
+        $self->logger->warn("$domain: HMM model retrieval failed: $_");
+    };
   } # end of "foreach domain"
 
   return \%data;
@@ -206,12 +254,7 @@ sub retrieve_pfam_hmm {
 sub retrieve_pfam_seed {
   my ($self, $domains) = @_;
 
-  # create a user agent
-  my $ua = LWP::UserAgent->new;
-  $ua->env_proxy;
-
   my %data;
-
   foreach my $domain (@$domains) {
 
     #----------------------------------------
@@ -230,20 +273,20 @@ sub retrieve_pfam_seed {
                       entry    => $domain );
     $req->content( $uri->query );
 
-    # submit the request
-    my $res = $ua->request( $req );
+    try {
+        my $res = $self->_ua_request("Domain $domain seed", $req);
 
-    warn "$domain: seed alignment retrieval failed: ". $res->status_line
-      unless $res->is_success;
+        $data{$domain} = $res->content;
+        # (need to strip out secondary structure and consensus lines,
+        # otherwise hmmalign seg faults...)
+        $data{$domain} =~ s/^\#=G[CR].*?\n//mg;
 
-    $data{$domain} = $res->content;
-    # (need to strip out secondary structure and consensus lines,
-    # otherwise hmmalign seg faults...)
-    $data{$domain} =~ s/^\#=G[CR].*?\n//mg;
+    } catch {
+        $self->logger->warn("$domain: seed alignment retrieval failed: $_");
+    };
   } # end of "foreach domain"
 
   return \%data;
-
 }
 
 sub get_seq_snippets {
@@ -270,61 +313,55 @@ sub get_seq_snippets {
 # the resulting alignments to the working directory
 
 sub align_to_seed {
-  my ($self, $seq, $domain, $hmm, $seed) = @_;
+    my ($self, $seq, $domain, $hmm, $seed) = @_;
 
-  # the sequence that we'll be aligning
-  my $seq_file = $self->create_filename($domain,"seq");
-  open(my $seq_fh, '>', $seq_file)
-            || die "Error creating '$seq_file' : $!";
+    my $have_no = (!defined $seed ? "seed" :
+                   (!defined $hmm ? "hmm" : ""));
+    if ($have_no) {
+        # Failure probably carried from retrieve_pfam_seed or
+        # retrieve_pfam_hmm
+        my $err = "have no $have_no, cannot run hmmalign";
+        $self->logger->warn("$domain: $err");
+        return (fail => $err);
+    }
 
-  print $seq_fh $seq; close $seq_fh;
-
+    # the sequence that we'll be aligning
+    my $seq_file = $self->write_file($domain,"seq", $seq);
 
     # the seed alignment
-    my $seed_file = $self->create_filename($domain,"seed");
-    open(my $seed_fh, '>', $seed_file)
-            || die "Error creating '$seed_file' : $!";
-
-    print $seed_fh $seed; close $seed_fh;
+    my $seed_file = $self->write_file($domain, "seed", $seed);
 
     # the HMM
-    my $hmm_file = $self->create_filename($domain,"ls");
-    open(my $hmm_fh, '>', $hmm_file)
-            || die "Error creating '$hmm_file' : $!";
-
-    print $hmm_fh $hmm; close $hmm_fh;
+    my $hmm_file = $self->write_file($domain, "ls", $hmm);
 
     # the hmmalign output
     my $output_filename = $self->create_filename($domain,"aln");
 
-
     # build the hmmalign command
-    my $cmd = $HMMALIGN . ' --mapali ' . $seed_file .
-                          ' -q '        . $hmm_file .
-                          ' '           . $seq_file .
-                          ' > '         . $output_filename;
+    my @cmd = ($HMMALIGN,
+               '--mapali' => $seed_file,
+               '-o' => $output_filename,
+               $hmm_file, $seq_file);
 
-    print STDOUT "$domain: aligning\n";
+    $self->logger->debug("$domain: aligning with (@cmd)");
 
-    system( $cmd ) == 0
-      or warn "$domain: couldn't run hmmalign '$cmd' [$!]\n";
-
-    # delete tmp files
-    unlink $seed_file ,  $hmm_file , $seq_file;
-    $self->output_files($output_filename);
-
-    return $output_filename;
-
+    my $ret = system @cmd;
+    if ($ret) {
+        my $err = "hmmalign '@cmd' failed [$ret]";
+        $self->logger->warn("$domain: $err");
+        return (fail => $err);
+    } else {
+        # delete tmp files
+        unlink $seed_file, $hmm_file, $seq_file;
+        return (ok => $output_filename);
+    }
 }
 
 sub create_filename{
-  my ($self, $stem, $ext, $dir) = @_;
-  if(!$dir){
-    $dir = '/var/tmp';
-  }
+  my ($self, $stem, $ext) = @_;
+  my $dir = $self->_tmpdir;
   $stem = '' if(!$stem);
   $ext = '' if(!$ext);
-  die $dir." doesn't exist Runnable:create_filename" unless(-d $dir);
   my $num = int(rand(100000));
   my $file = $dir."/".$stem.".".$$.".".$num.".".$ext;
   while(-e $file){
@@ -334,21 +371,16 @@ sub create_filename{
   return $file;
 }
 
-sub output_files {
-    my ($self, $file) = @_;
-    if ($file) {
-        push @{$self->{_result_files}} , $file;
-    }
-    return $self->{_result_files};
-}
-
-sub DESTROY {
-    my ($self) = @_;
-    return unless $self->output_files;
-    foreach (@{$self->output_files}) {
-        unlink $_;
-    }
-        return;
+sub write_file {
+    my ($self, $stem, $ext, $content) = @_;
+    my $fn = $self->create_filename($stem, $ext);
+    open my $fh, '>', $fn
+      or die "Error creating $ext at $fn: $!";
+    print {$fh} $content
+      or die "Error writing to $fn: $!";
+    close $fh
+      or die "Error closing $fn: $!";
+    return $fn;
 }
 
 

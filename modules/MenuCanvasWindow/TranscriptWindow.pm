@@ -889,24 +889,19 @@ sub search_pfam {
     my $str = $pep->sequence_string;
     my $pfam;
 
-    if($self->{'_pfam'} && Tk::Exists($self->{'_pfam'}->top)) {
-        $pfam = $self->{'_pfam'};
-        if($pfam->query() ne $str) {
-            $pfam->top->destroy;
-            $pfam = $self->_new_window($name);
-        } else {
-            $pfam->top->deiconify;
-            $pfam->top->raise;
-            $pfam->top->focus;
-
+    if($self->{'_pfam'}) {
+        if ($self->{'_pfam'}->restore($str)) {
+            # Keeping old results window
+            $pfam = $self->{'_pfam'};
             return 1;
+        } else {
+            # Maybe keep old results URL
+            my $old = $self->{'_pfam'};
+            my $result_url = $old->result_url;
+            my $prev_query = $old->query();
+            $pfam = $self->_new_window($name);
+            $pfam->result_url($result_url) if $prev_query eq $str;
         }
-    } elsif($self->{'_pfam'} && !Tk::Exists($self->{'_pfam'}->top)) {
-        $pfam = $self->{'_pfam'};
-        my $result_url = $pfam->result_url;
-        my $prev_query = $pfam->query();
-        $pfam = $self->_new_window($name);
-        $pfam->result_url($result_url) unless $prev_query ne $str;
     } else {
         $pfam = $self->_new_window($name);
     }
@@ -915,7 +910,8 @@ sub search_pfam {
     $pfam->name($name);
     $self->{'_pfam'} = $pfam;
     try {
-        $pfam->initialize();
+        my $session_dir = $self->SessionWindow->AceDatabase->home;
+        $pfam->initialize("$session_dir/pfam");
     } catch {
         my $err = $_;
         $self->exception_message($_, "Failed to request Pfam search");
