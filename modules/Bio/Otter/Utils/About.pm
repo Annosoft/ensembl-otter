@@ -71,6 +71,8 @@ sub version_diagnosis {
     my ($pkg) = @_;
 
     my $vsn = Bio::Otter::Git->as_text;
+    $vsn =~ s{^v(\d+)}{$1};
+
     my ($desig, $desig_latest, $live) = Bio::Otter::Lace::Client->the->designate_this;
 
     # Ugly trick to direct tickets, for dev/otterlace_this and testers on MacOS
@@ -84,9 +86,11 @@ sub version_diagnosis {
     if ($desig eq 'dev') {
         return (0, $colour, 'an unstable developer-edition Otterlace');
     } elsif ($colour && $vsn eq $desig_latest) {
+        # getting an exact match is a bit too ticklish, because $vsn
+        # may get dressed up for human consumption
         return (0, $colour, "the latest $desig Otterlace");
     } elsif ($colour) {
-        my $txt = "is not the current $desig Otterlace\nIt is $vsn, latest is $desig_latest";
+        my $txt = "not the current $desig Otterlace\nIt is $vsn, latest is $desig_latest";
         return (1, $colour, $txt);
     } elsif (defined $desig && $desig !~ /^\d+(_|$)/) {
         # some designation we didn't recognise e.g. (rt324508 ancient zircon)
