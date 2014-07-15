@@ -295,7 +295,7 @@ sub _desig {
       or die "Error reading version designations $fn: $!";
     while (<$fh>) {
         next if /^\s+$|^#/;
-        if (m{^(\S+)\s+(\d+(?:\.\d+)?)$}) {
+        if (m{^(\S+)\s+(\d+(?:\.\d+)?(?:_\w+)?)$}) {
             $desig{$1} = $2;
         } else {
             warn "Skipped bad version designation $_"

@@ -1219,13 +1219,27 @@ sub designate_this {
     my ($self) = @_;
     my $desig = $self->get_designations;
     my $major = Bio::Otter::Version->version;
-    my $major_re = qr{^$major(\.|$|_)};
+    my $feat = Bio::Otter::Git->param('feature');
+
+    my $major_re = ($feat
+                    ? qr{^$major(\.\d+)?_$feat$}
+                    : qr{^$major(\.|$)});
+
     my ($key) =
       # There would have been multiple hits for v75, but now we have
       # feature branches.  Sort just in case.
       sort grep { $desig->{$_} =~ $major_re } keys %$desig;
+
     my $live = $desig->{live};
-    my $exact = $desig->{$key};
+    my $exact_key = $key;
+
+    if (!defined $key) {
+        my @v = sort values %$desig;
+        $self->logger->warn("No match for $major_re against designations.txt values (@v)");
+        $exact_key = 'live';
+    }
+
+    my $exact = $desig->{$exact_key};
     return ($key, $exact, $live);
 }
 

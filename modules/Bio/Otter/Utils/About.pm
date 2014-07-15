@@ -75,13 +75,13 @@ sub version_diagnosis {
 
     # Ugly trick to direct tickets, for dev/otterlace_this and testers on MacOS
     $ENV{OTTERLACE_RAN_AS} = "inferred/otterlace_$desig"
-      unless defined $ENV{OTTERLACE_RAN_AS};
+      if defined $desig && !defined $ENV{OTTERLACE_RAN_AS};
 
     my $colour = { live => 'white',
                    test => '#a1e3c9', # slightly minty
                    dev => '#f4cb9f',
-                   old => 'pink' }->{$desig};
-    if ($desig eq 'dev') {
+                   old => 'pink' }->{$desig || ''};
+    if (defined $desig && $desig eq 'dev') {
         return (0, $colour, 'an unstable developer-edition Otterlace');
     } elsif ($colour && $vsn eq $desig_latest) {
         return (0, $colour, "the latest $desig Otterlace");
