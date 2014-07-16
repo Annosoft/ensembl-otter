@@ -978,8 +978,8 @@ sub lock_refresh_for_DataSet_SequenceSet {
     my %author_hash = ();
 
     foreach my $clone_lock (@{ $response->{CloneLock} || [] }) {
-        my ($intl_name, $embl_name, $ctg_name, $hostname, $timestamp, $aut_name, $aut_email)
-          = @{$clone_lock}{qw{ acc_sv name hostname timestamp author_name author_email }};
+        my ($ctg_name, $hostname, $timestamp, $aut_name, $aut_email)
+          = @{$clone_lock}{qw{ ctg_name hostname timestamp author_name author_email }};
 
         $author_hash{$aut_name} ||= Bio::Vega::Author->new(
             -name  => $aut_name,

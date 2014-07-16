@@ -65,7 +65,7 @@ sub get_CloneLocks {
     my @out;
     while (my (@columns) = $sth->fetchrow()) {
         my %field;
-        @field{qw{ acc_sv name hostname timestamp author_name author_email }}
+        @field{qw{ intl_name acc_sv ctg_name hostname timestamp author_name author_email }}
           = @columns;
         push @out, \%field;
     }
