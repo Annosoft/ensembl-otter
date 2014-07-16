@@ -67,6 +67,12 @@ sub get_CloneLocks {
         my %field;
         @field{qw{ intl_name acc_sv ctg_name hostname timestamp author_name author_email }}
           = @columns;
+
+        # Backwards compatible kludge to service 84.01 
+        $field{_real_hostname} = $field{hostname}; # preserve real data
+        $field{hostname} = $field{ctg_name}; # provide field-swapped data
+        $field{_kludge} = 'b306f4371b907691e091e1a317e596376374e529'; # explain
+
         push @out, \%field;
     }
     return \@out;
