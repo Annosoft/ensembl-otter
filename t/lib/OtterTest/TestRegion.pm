@@ -75,6 +75,7 @@ sub extra_gene {
         );
     $transcript->biotype('protein_coding');
     $transcript->status('KNOWN');
+    $transcript->source('havana');
     $transcript->transcript_author($author);
 
     my @transcript_attributes;

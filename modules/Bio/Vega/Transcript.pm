@@ -44,6 +44,7 @@ sub new_dissociated_copy {
             'is_current',
             'modified_date',
             'slice',            # ok to share object?
+            'source',           # unsed here, when introduced in e75
             'stable_id',
             'start',
             'status',
@@ -210,6 +211,8 @@ sub vega_hashkey {
       || throw(          'biotype must be set to generate correct vega_hashkey.');
   my $status            = $self->status
       || throw(           'status must be set to generate correct vega_hashkey.');
+  my $source          = $self->source
+      || throw(           'source must be set to generate correct vega_hashkey');
 
   my $exon_count = scalar @{$self->get_all_Exons}
       || throw("there are no exons for this transcript to generate correct vega_hashkey");
@@ -220,7 +223,7 @@ sub vega_hashkey {
 
   return join '-'
       , $seq_region_name, $seq_region_start, $seq_region_end, $seq_region_strand
-      , $biotype, $status, $exon_count, $description, $evidence_count, $attrib_string
+      , $biotype, $status, $source, $exon_count, $description, $evidence_count, $attrib_string
       ;
 }
 
@@ -232,6 +235,7 @@ sub vega_hashkey_structure {
         seq_region_strand
         biotype
         status
+        source
         exon_count
         description
         evidence_count
