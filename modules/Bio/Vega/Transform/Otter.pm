@@ -621,6 +621,7 @@ sub build_Locus {
 
     ##share exons among transcripts of this gene
     foreach my $tran (@$transcripts) {
+        $tran->source($source); # copy from $gene, we don't need them to differ
         $gene->add_Transcript($tran);
     }
     $gene->prune_Exons;
