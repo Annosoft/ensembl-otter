@@ -71,7 +71,12 @@ sub version_diagnosis {
     my ($pkg) = @_;
 
     my $vsn = Bio::Otter::Git->as_text;
-    $vsn =~ s{^v(\d+)}{$1};
+    if ($vsn =~ /^v\d+/) {
+        $vsn =~ s{^v(\d+)}{$1};
+    } elsif ($vsn =~ /^humpub-release-\d+/) {
+        $vsn =~ s{^humpub-release-(\d+)}{$1};
+        $vsn =~ s{\s+\(feature \w+\)$}{};
+    }
 
     my ($desig, $desig_latest, $live) = Bio::Otter::Lace::Client->the->designate_this;
 
