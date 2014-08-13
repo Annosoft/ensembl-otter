@@ -720,7 +720,7 @@ sub populate_clone_menu {
             -label          => $clone->clone_name,
             # Not an accelerator - just for formatting!
             -accelerator    => $clone->accession_version,
-            -command        => sub{ $self->edit_Clone($clone) },
+            -command        => sub{ $self->edit_Clone_by_name($clone->name) },
             );
     }
 
@@ -1848,6 +1848,15 @@ sub edit_Clone {
          init => { SessionWindow => $self,
                    Clone => $clone },
          raise => 1 });
+
+    return;
+}
+
+sub edit_Clone_by_name {
+    my ($self, $name) = @_;
+
+    my $clone = $self->Assembly->get_Clone($name);
+    $self->edit_Clone($clone);
 
     return;
 }
