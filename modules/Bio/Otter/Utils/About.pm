@@ -73,8 +73,8 @@ sub version_diagnosis {
     my $vsn = Bio::Otter::Git->as_text;
     if ($vsn =~ /^v\d+/) {
         $vsn =~ s{^v(\d+)}{$1};
-    } elsif ($vsn =~ /^humpub-release-\d+/) {
-        $vsn =~ s{^humpub-release-(\d+)}{$1};
+    } elsif ($vsn =~ /^humpub-release-\d+(-\d+)?/) {
+        $vsn =~ s{^humpub-release-(\d+)(?:-(\d+))?}{$1.$2};
         $vsn =~ s{\s+\(feature \w+\)$}{};
     }
 
