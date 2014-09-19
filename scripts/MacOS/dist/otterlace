@@ -72,4 +72,5 @@ fi
 
 # Now try the default script
 
-$OTTER_HOME/bin/otterlace "$@"
+$OTTER_HOME/bin/otterlace
+
