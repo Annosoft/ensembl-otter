@@ -653,7 +653,11 @@ my $_new_feature_id_sub = sub {
         my ($self, @args) = @_;
 
         my $feature_type = $self->feature_type->name;
-        my $feature_type_abbrev = $feature_type_to_abbrev{$feature_type} || 'unknown';
+        my $feature_type_abbrev = $feature_type_to_abbrev{$feature_type};
+        unless ($feature_type_abbrev) {
+            $feature_type_abbrev = $feature_type;
+            $feature_type_abbrev =~ s/\s+/-/g;
+        }
 
         my $feature_set = $self->feature_set->name;
         $feature_set =~ s/^Segmentation://; # again, a bit yucky to have this hard-coded
