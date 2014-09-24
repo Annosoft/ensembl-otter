@@ -640,13 +640,18 @@ my $_new_feature_id_sub = sub {
     # http://www.ensembl.org/info/genome/funcgen/regulatory_segmentation.html
 
     my %feature_type_to_abbrev = (
-        'CTCF enriched'                           => 'CTCF',
-        'Predicted Weak Enhancer/Cis-reg element' => 'WE',
-        'Predicted Transcribed Region'            => 'T',
-        'Predicted Enhancer'                      => 'E',
-        'Predicted Promoter Flank'                => 'PF',
-        'Predicted Repressed/Low Activity'        => 'R',
-        'Predicted Promoter with TSS'             => 'TSS',
+        'CTCF enriched'                           => 'CTCF', # ok, used in EnsEMBL 76
+        'Predicted Weak Enhancer/Cis-reg element' => 'WE',   # ok (not used in e!76)
+        'Predicted Transcribed Region'            => 'T',    # ok, used
+        'Predicted Enhancer'                      => 'E',    # ok, used
+        'Predicted Promoter Flank'                => 'PF',   # ok, used
+        'Predicted Repressed/Low Activity'        => 'RLA',  # ok - changed from R (not used in e!76)
+        'Predicted Promoter with TSS'             => 'TSS',  # ok, used
+        # new
+        'Predicted heterochromatin'               => 'HC', # used
+        'Predicted low activity'                  => 'LA', # used
+        'Predicted Repressed'                     => 'R',  # used, abbrev was prev used
+                                                           #        for 'Predicted Repressed/Low Activity'
         );
 
     sub _gff_hash {
