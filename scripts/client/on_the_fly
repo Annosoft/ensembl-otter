@@ -24,6 +24,8 @@ sub do_it {
                           });
 
     if ($request) {
+        $request->status('running');
+        $request_adaptor->update($request);
         $self->time_diff_for( 'run_request', sub {
             $self->run_request($request);
                               });
