@@ -6,7 +6,6 @@ use strict;
 use warnings;
 use Hum::Sort qw{ ace_sort };
 use Bio::Otter::Lace::Defaults;
-use Bio::Otter::Lace::SatelliteDB;
 
 {
 
@@ -18,12 +17,12 @@ use Bio::Otter::Lace::SatelliteDB;
         ) or $usage->();
     
     # Client communicates with otter HTTP server
-    my $cl = Bio::Otter::Lace::Defaults::make_Client();
+#    my $cl = Bio::Otter::Lace::Defaults::make_Client();
     
     # DataSet interacts directly with an otter database
-    my $ds = $cl->get_DataSet_by_name('zebrafish');
+    my $ds = Bio::Otter::Server::Config->SpeciesDat->dataset('zebrafish');
     
-    my $otter_dba = $ds->get_cached_DBAdaptor;
+#    my $otter_dba = $ds->otter_dba;
 
     my $head = "\n[zebrafish.use_filters]\n";
     my $body = '';
@@ -64,7 +63,7 @@ zmap_style=solexa_genes
 };
 
         my ($meta_key) = $template =~ /metakey=(\S+)/;
-        my $meta_db = Bio::Otter::Lace::SatelliteDB::get_DBAdaptor($otter_dba, $meta_key)->dbc;
+        my $meta_db = $ds->satellite_dba($meta_key)->dbc;
 
         my $field_count = $template =~ tr/%/%/;
         foreach my $stage (sort {ace_sort($a, $b)} keys %solex) {
@@ -106,7 +105,7 @@ zmap_style=solexa_introns
 };
 
         my ($meta_key) = $template =~ /metakey=(\S+)/;
-        my $meta_db = Bio::Otter::Lace::SatelliteDB::get_DBAdaptor($otter_dba, $meta_key)->dbc;
+        my $meta_db = $ds->satellite_dba($meta_key)->dbc;
 
         my $field_count = $template =~ tr/%/%/;
         foreach my $stage (sort {ace_sort($a, $b)} keys %solex) {
@@ -144,7 +143,7 @@ zmap_style=solexa_coverage
 };
 
         my ($meta_key) = $template =~ /metakey=(\S+)/;
-        my $meta_db = Bio::Otter::Lace::SatelliteDB::get_DBAdaptor($otter_dba, $meta_key)->dbc;
+        my $meta_db = $ds->satellite_dba($meta_key)->dbc;
 
         my $field_count = $template =~ tr/%/%/;
         foreach my $stage (sort {ace_sort($a, $b)} keys %solex) {

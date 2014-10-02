@@ -21,10 +21,10 @@ use Bio::Otter::Server::Config;
     $usage->() unless $dataset_name;
     
     # Client communicates with otter HTTP server
-    my $cl = Bio::Otter::Lace::Defaults::make_Client();
+#    my $cl = Bio::Otter::Lace::Defaults::make_Client();
     
     # DataSet interacts directly with an otter database
-    my $ds = $cl->get_DataSet_by_name($dataset_name);
+    my $ds = Bio::Otter::Server::Config->SpeciesDat->dataset($dataset_name);
 
     my $chr_list = join(', ', map { "'$_'" } (1..22, 'X', 'Y'));
 
@@ -62,7 +62,7 @@ use Bio::Otter::Server::Config;
           AND sra_chr.value in ($chr_list)
     };
     die $sql_query;
-    my $dba = $ds->get_cached_DBAdaptor;
+    my $dba = $ds->otter_dba;
     my $dbc = $dba->dbc;
     my $sth = $dbc->prepare($sql_query);
     $sth->execute;

@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 use Bio::Otter::Lace::Defaults;
-use Bio::Otter::Lace::PipelineDB;
+use Bio::Otter::Server::Config;
 use Try::Tiny;
 
 {
@@ -27,14 +27,13 @@ use Try::Tiny;
 
     print "$sql\n";
 
-    my $cl = Bio::Otter::Lace::Defaults::make_Client();
-    foreach my $ds ($cl->get_all_DataSets) {
+#    my $cl = Bio::Otter::Lace::Defaults::make_Client();
+    foreach my $ds (Bio::Otter::Server::Config->SpeciesDat->datasets) {
         printf "Querying dataset %s\n", $ds->name;
-        my $otter_dba = $ds->get_cached_DBAdaptor;
         my $query_dba =
           $pipe_flag
-          ? Bio::Otter::Lace::PipelineDB::get_pipeline_rw_DBAdaptor($otter_dba)
-          : $otter_dba;
+          ? $ds->pipeline_dba('rw')
+          : $ds->otter_dba;
 
         my $row_count;
         if ($do_flag) {

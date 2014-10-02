@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Bio::Otter::Lace::Defaults;
-use Bio::Otter::Lace::PipelineDB;
+use Bio::Otter::Server::Config;
 
 {
     my $dataset_name = 'sheep';
@@ -26,11 +26,11 @@ use Bio::Otter::Lace::PipelineDB;
     my $cl = Bio::Otter::Lace::Defaults::make_Client();
     
     # DataSet interacts directly with an otter database
-    my $ds = $cl->get_DataSet_by_name($dataset_name);
+    my $ds = Bio::Otter::Server::Config->SpeciesDat->dataset($dataset_name);
     
-    my $otter_dba = $ds->get_cached_DBAdaptor;
-    my $pipe_dba = Bio::Otter::Lace::PipelineDB::get_pipeline_rw_DBAdaptor($otter_dba);
-    my $ens_dba = Bio::Otter::Lace::SatelliteDB::get_DBAdaptor($otter_dba, 'ensembl_core_db_head');
+#    my $otter_dba = $ds->otter_dba;
+    my $pipe_dba = $ds->pipeline_dba('rw');
+    my $ens_dba = $ds->satellite_dba('ensembl_core_db_head');
     
     my $ens_ctg_coord_sys_id  = $ens_dba->get_CoordSystemAdaptor->fetch_by_name('contig')->dbID;
     

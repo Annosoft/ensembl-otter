@@ -235,16 +235,10 @@ sub otter_client_dbhs {
     my ($dataset_name, $sel_loutre, $sel_pipe) = @_;
     die "expect list context" unless wantarray;
 
-    require Bio::Otter::Lace::Defaults;
-    require Bio::Otter::Lace::PipelineDB;
-    local @ARGV = (); Bio::Otter::Lace::Defaults::do_getopt();
-
-    # Client communicates with otter HTTP server
-    my $cl = Bio::Otter::Lace::Defaults::make_Client();
-    my $ds = $cl->get_DataSet_by_name($dataset_name);
-
-    my $otter_dba = $ds->get_cached_DBAdaptor;
-    my $pipe_dba = Bio::Otter::Lace::PipelineDB::get_rw_DBAdaptor($otter_dba);
+    require Bio::Otter::Server::Config;
+    my $ds = Bio::Otter::Server::Config->SpeciesDat->dataset($dataset_name);
+    my $otter_dba = $ds->otter_dba;
+    my $pipe_dba = $ds->pipeline_dba('rw');
 
     my @dbh;
     push @dbh, $otter_dba->dbc->db_handle if $sel_loutre;

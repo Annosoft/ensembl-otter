@@ -4,7 +4,7 @@ use warnings;
 
 use Test::More;
 use Digest::MD5 'md5_hex';
-use Test::Otter qw( ^db_or_skipall get_BOLDatasets diagdump excused );
+use Test::Otter qw( ^db_or_skipall get_BOSDatasets diagdump excused );
 
 use AccessionChecksum;
 
@@ -40,13 +40,13 @@ mca@sanger.ac.uk
 
 sub main {
     @ARGV = qw(pig) unless @ARGV;
-    my @ds = get_BOLDatasets(@ARGV);
+    my @ds = get_BOSDatasets(@ARGV);
     plan tests => 3 * @ds;
     $SIG{INT} = sub { die "Caught SIGINT - tidying up\n" };
 
     foreach my $ds (@ds) {
         my $name = $ds->name;
-        my $O = $ds->get_cached_DBAdaptor;
+        my $O = $ds->otter_dba;
         my $clones = $O->get_SliceAdaptor->fetch_all(clone => undef, 1, 1, 1);
         my $cache = AccessionChecksum->new($name);
 

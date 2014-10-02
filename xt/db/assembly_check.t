@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Otter qw( ^db_or_skipall get_BOLDatasets diagdump );
+use Test::Otter qw( ^db_or_skipall get_BOSDatasets diagdump );
 
 =head1 DESCRIPTION
 
@@ -56,7 +56,7 @@ sub main {
         # restricted: nod_mouse
     }
 
-    my @ds = get_BOLDatasets(@ARGV);
+    my @ds = get_BOSDatasets(@ARGV);
     my $maxrow = 2;
 
     my $FROM_ASM_A_CMP = q{  from
@@ -103,7 +103,7 @@ sub main {
     plan tests => @ds * keys %sql;
 
     foreach my $ds (@ds) {
-        my $dbc = $ds->get_cached_DBAdaptor->dbc;
+        my $dbc = $ds->otter_dba->dbc;
         my $dbh = $dbc->db_handle;
         my $dbname = $dbc->dbname;
 

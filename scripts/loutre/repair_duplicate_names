@@ -10,6 +10,7 @@ use Try::Tiny;
 use Bio::Vega::Author;
 use Bio::Vega::SliceLockBroker;
 use Bio::Otter::Lace::Defaults;
+use Bio::Otter::Server::Config;
 use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 {
@@ -32,9 +33,9 @@ use Bio::EnsEMBL::Utils::Exception qw(warning);
     my $cl = Bio::Otter::Lace::Defaults::make_Client();
 
     # DataSet interacts directly with an otter database
-    my $ds = $cl->get_DataSet_by_name($dsname);
+    my $ds = Bio::Otter::Server::Config->SpeciesDat->dataset($dsname);
 
-    my $loutre_dbc = $ds->get_cached_DBAdaptor->dbc();
+    my $loutre_dbc = $ds->otter_dba->dbc();
 
     foreach my $component ('gene', 'transcript') { # would be neater to do them together, per gene, to fit under one slice_lock row
 
@@ -109,8 +110,8 @@ use Bio::EnsEMBL::Utils::Exception qw(warning);
                         my $author_obj = Bio::Vega::Author->new(-name => $cl->author, -email => $cl->email);
                         my $object_ad =
                             $component eq 'gene'
-                          ? $ds->get_cached_DBAdaptor->get_GeneAdaptor()
-                          : $ds->get_cached_DBAdaptor->get_TranscriptAdaptor();
+                          ? $ds->otter_dba->get_GeneAdaptor()
+                          : $ds->otter_dba->get_TranscriptAdaptor();
                         my $object = $object_ad->fetch_by_stable_id($stable_id);
 
                         my $broker = Bio::Vega::SliceLockBroker->new

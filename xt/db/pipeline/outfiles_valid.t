@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Otter qw( ^db_or_skipall ^farm_or_skipall get_BOLDatasets diagdump );
+use Test::Otter qw( ^db_or_skipall ^farm_or_skipall get_BOSDatasets diagdump );
 
 =head1 DESCRIPTION
 
@@ -37,12 +37,12 @@ sub main {
     setup('0775 02775');
 
     @ARGV = 'ALL' if !@ARGV;
-    my @ds = get_BOLDatasets(@ARGV);
+    my @ds = get_BOSDatasets(@ARGV);
 
     plan tests => @ds * 2;
 
     foreach my $ds (@ds) {
-        my $dbc = $ds->get_pipeline_DBAdaptor->dbc;
+        my $dbc = $ds->pipeline_dba->dbc;
         my $dbh = $dbc->db_handle;
         my $dbname = $dbc->dbname;
 

@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Bio::Otter::Lace::Defaults;
-use Bio::Otter::Lace::PipelineDB;
+use Bio::Otter::Server::Config;
 
 {
     my $dataset_name = 'human';
@@ -23,9 +23,9 @@ use Bio::Otter::Lace::PipelineDB;
     my $cl = Bio::Otter::Lace::Defaults::make_Client();
     
     # DataSet interacts directly with an otter database
-    my $ds = $cl->get_DataSet_by_name($dataset_name);
+    my $ds = Bio::Otter::Server::Config->SpeciesDat->dataset($dataset_name);
     
-    my $otter_dba = $ds->get_cached_DBAdaptor;
+    my $otter_dba = $ds->otter_dba;
     my $sth = $otter_dba->dbc->prepare(q{
         SELECT sr.seq_region_id
           , sr.name

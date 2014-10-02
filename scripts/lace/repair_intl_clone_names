@@ -5,7 +5,7 @@ use warnings;
 use strict;
 use Carp;
 use Hum::Tracking;
-use Bio::Otter::Lace::PipelineDB;
+use Bio::Otter::Server::Config;
 use Bio::Otter::Lace::Defaults;
 use Hum::Submission;
 
@@ -21,14 +21,8 @@ use Hum::Submission;
 
     my $cl = Bio::Otter::Lace::Defaults::make_Client();
 
-    my @datasets;
-
-    if ($dataset_name) {
-        push @datasets, $cl->get_DataSet_by_name($dataset_name);
-    }
-    else {
-        @datasets = $cl->get_all_DataSets();
-    }
+    my $SD = Bio::Otter::Server::Config->SpeciesDat;
+    my @datasets = $dataset_name ? ($SD->dataset($dataset_name)) : $SD->datasets;
 
     get_international_clone_name('junk'); # ensure we can, before grabbing the lock
 
@@ -45,13 +39,13 @@ use Hum::Submission;
         print STDERR "\n=================== $dataset_name ===============\n";
 
         # Make a connection to the otter database
-        my $otter_db = $ds->get_cached_DBAdaptor;
+        my $otter_db = $ds->otter_dba;
 
         eval {
-            my $dbh = $otter_db->can('dbc') ? $otter_db->dbc : $otter_db;
+            my $dbh = $ds->otter_dba->dbc;
             repair_one_db($dbh, $rescan_flag, $change_flag, $dataset_name, 'otter');
 
-            my $pipe_db = Bio::Otter::Lace::SatelliteDB::get_DBAdaptor($otter_db, 'pipeline_db_rw_head',);
+            my $pipe_db = $ds->pipeline_dba('rw');
             repair_one_db($pipe_db->dbc, $rescan_flag, $change_flag, $dataset_name, 'pipe');
         };
         warn $@ if $@;
