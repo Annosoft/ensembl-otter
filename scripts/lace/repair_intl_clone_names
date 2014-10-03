@@ -22,7 +22,7 @@ use Hum::Submission;
     my $cl = Bio::Otter::Lace::Defaults::make_Client();
 
     my $SD = Bio::Otter::Server::Config->SpeciesDat;
-    my @datasets = $dataset_name ? ($SD->dataset($dataset_name)) : $SD->datasets;
+    my @datasets = $dataset_name ? ($SD->dataset($dataset_name)) : @{ $SD->datasets };
 
     get_international_clone_name('junk'); # ensure we can, before grabbing the lock
 
