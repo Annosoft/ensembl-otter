@@ -2550,10 +2550,12 @@ sub zmap_configs_dir {
 
 sub new_zircon_context {
     my ($self) = @_;
-    return Zircon::TkZMQ::Context->new(
+    my $context = Zircon::TkZMQ::Context->new(
             '-widget'       => $self->menu_bar,
             '-trace_prefix' => sprintf('SW=[%s]', $self->AceDatabase->name),
         );
+    $self->logger->debug(sprintf('New context: %s', $context));
+    return $context;
 }
 
 sub zmap_new {
@@ -2585,6 +2587,7 @@ sub zmap_new {
             '-timeout_list'           => \@to_list,
             '-handshake_timeout_secs' => $handshake_to,
         );
+    $self->logger->debug(sprintf('New zmap: %s', $zmap));
     return $zmap;
 }
 
@@ -2597,6 +2600,7 @@ sub zircon_app_id {
 
 sub _zmap_view_new {
     my ($self, $zmap) = @_;
+    $self->logger->debug($zmap ? sprintf('_zmap_view_new using zmap: %s', $zmap) : '_zmap_view_new will create new zmap');
     $zmap ||= $self->zmap_new;
     $self->_delete_zmap_view;
     $self->{'_zmap_view'} =
@@ -2604,6 +2608,7 @@ sub _zmap_view_new {
             %{$self->zmap_view_arg_hash},
             '-handler' => $self,
         );
+    $self->logger->debug(sprintf('New _zmap_view: %s', $self->{'_zmap_view'}));
     $self->deiconify_and_raise;
     return;
 }
@@ -2632,6 +2637,7 @@ sub delete_zmap_view {
 
 sub _delete_zmap_view {
     my ($self) = @_;
+    $self->logger->debug(sprintf('Deleting _zmap_view: %s', $self->{'_zmap_view'} || '<undef>'));
     delete $self->{'_zmap_view'};
     return;
 }
