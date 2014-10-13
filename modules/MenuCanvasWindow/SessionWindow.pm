@@ -464,6 +464,7 @@ sub populate_menus {
     # Close window
     my $exit_command = sub {
         $self->exit_save_data or return;
+        $self->_delete_zmap_view;
         $self->ColumnChooser->top_window->destroy;
         };
     $file->add('command',
