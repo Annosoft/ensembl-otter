@@ -49,6 +49,7 @@ my @method_biotype_status = qw{
         snRNA                       =                       -
         snoRNA                      =                       -
         tRNA                        =                       -
+        vaultRNA                    =                       -
 
     Pseudogene                      =                       -
         Processed_pseudogene        =                       -
