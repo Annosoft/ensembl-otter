@@ -462,11 +462,7 @@ sub populate_menus {
                      -command => sub { $self->_clipboard_setup(1) });
 
     # Close window
-    my $exit_command = sub {
-        $self->exit_save_data or return;
-        $self->_delete_zmap_view;
-        $self->ColumnChooser->top_window->destroy;
-        };
+    my $exit_command = $self->bind_WM_DELETE_WINDOW('delete_window');
     $file->add('command',
         -label          => 'Close',
         -command        => $exit_command,
@@ -475,7 +471,6 @@ sub populate_menus {
         );
     $top->bind('<Control-w>', $exit_command);
     $top->bind('<Control-W>', $exit_command);
-    $top->protocol('WM_DELETE_WINDOW', $exit_command);
 
     # Subseq menu
     my $subseq = $self->make_menu('SubSeq', 1);
@@ -675,6 +670,14 @@ sub populate_menus {
     });
 
     return;
+}
+
+sub delete_window {
+    my ($self) = @_;
+    $self->exit_save_data or return;
+    $self->_delete_zmap_view;
+    $self->ColumnChooser->top_window->destroy;
+    return 1;
 }
 
 sub ColumnChooser {
@@ -963,6 +966,7 @@ sub exit_save_data {
             -default_button => 'No',
             -buttons        => [qw{ Yes No Cancel }],
             );
+        $self->delete_window_dialog($dialog);
         my $ans = $dialog->Show;
         if ($ans eq 'Cancel') {
             return;
@@ -2490,6 +2494,12 @@ sub set_window_title {
 
     return;
 }
+
+sub name { # used by the bind_WM_DELETE_WINDOW method
+    my ($self) = @_;
+    return try { $self->AceDatabase->name } catch { "(a session)" };
+}
+
 
 sub zmap_view_arg_hash {
     my ($self) = @_;
