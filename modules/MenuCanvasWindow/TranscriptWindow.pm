@@ -800,6 +800,16 @@ sub is_mutable {
 sub window_close {
     my ($self) = @_;
 
+    if (my $d = $self->{_window_closing}) {
+        warn "Dodged nesting call to window_close($self) for ".$self->name;
+        if (Tk::Exists($d)) { # maybe we have the confirmation dialog
+            $d->deiconify;
+            $d->raise;
+        }
+        return;
+    }
+    local $self->{_window_closing} = 1;
+
     my $SessionWindow = $self->SessionWindow;
 
     if ($self->is_mutable && $SessionWindow->AceDatabase->write_access) {
@@ -820,6 +830,7 @@ sub window_close {
                 -default_button => 'No',
                 -buttons        => [qw{ Yes No }],
                 );
+            $self->{_window_closing} = $dialog;
             my $ans = $dialog->Show;
             return if $ans eq 'No';
         }
