@@ -319,7 +319,7 @@ sub _bam_load {
         my $config = $self->config_section("bam.${name}");
         try {
             my $bam = Bio::Otter::Source::BAM->new($name, $config);
-            $bam->wanted(1);
+            $bam->wanted(0);
             $bam->init_resource_bin;
             $bam_by_name->{$name} = $bam;
         }
