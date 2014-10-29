@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use Log::Log4perl qw(:easy);
 use URI::Escape qw(uri_unescape);
 
 use Bio::DB::BigWig;
@@ -59,6 +60,10 @@ my @options = map { _option() } @options_specs;
 
 Bio::Otter::Lace::Defaults::do_getopt(@options);
 show_version() if $options->{version};
+
+Log::Log4perl->easy_init({ level => $DEBUG,
+                           layout => 'bigwig_get.%c %p: %m%n'
+                         });
 
 my @options_missing = grep { ! defined $options->{$_} } @options_required;
 die sprintf "missing options: %s\n",
