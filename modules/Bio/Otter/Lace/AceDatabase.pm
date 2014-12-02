@@ -1268,16 +1268,26 @@ sub _new_ProcessGFF_for_column {
         );
 }
 
+sub core_script_arguments {
+    my ($self) = @_;
+
+    my $arguments = {
+        client      => 'otterlace',
+        session_dir => $self->home,
+        url_root    => $self->Client->url_root,
+        cookie_jar  => $ENV{'OTTERLACE_COOKIE_JAR'},
+    };
+
+    return $arguments;
+}
+
 sub script_arguments {
     my ($self) = @_;
 
     my $arguments = {
-        client => 'otterlace',
+        %{$self->core_script_arguments},
         %{$self->_query_hash},
         gff_version => $self->DataSet->gff_version,
-        session_dir => $self->home,
-        url_root    => $self->Client->url_root,
-        cookie_jar  => $ENV{'OTTERLACE_COOKIE_JAR'},
     };
 
     return $arguments;

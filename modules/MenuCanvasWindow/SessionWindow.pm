@@ -1628,16 +1628,13 @@ sub _process_hits_proc {
     my $_process_hits_proc = $self->{'_process_hits_proc'};
     unless ($_process_hits_proc) {
 
-        my $home     = $self->AceDatabase->home;
-        my $url_root = $self->AceDatabase->Client->url_root;
+        my $core_script_args = $self->AceDatabase->core_script_arguments;
+        my @arg_list = map { sprintf('%s=%s', $_, $core_script_args->{$_}) } keys %$core_script_args;
 
         my $proc = Bio::Otter::Zircon::ProcessHits->new(
-            '-app_id'   => $self->zircon_app_id,
-            '-context'  => $self->new_zircon_context('PHO'),
-            '-arg_list' => [
-                "session_dir=$home",
-                "url_root=$url_root",
-            ],
+            '-app_id'             => $self->zircon_app_id,
+            '-context'            => $self->new_zircon_context('PHO'),
+            '-arg_list'           => \@arg_list,
             '-session_window'     => $self,
             '-processed_callback' => \&_processed_column,
             '-update_callback'    => \&_update_column_status,
