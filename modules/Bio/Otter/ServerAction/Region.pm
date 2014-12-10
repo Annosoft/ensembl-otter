@@ -361,9 +361,18 @@ sub _assert_contig_locked {
     #
     # Proceed anyway.  RT#439403
 
+    warn sprintf("[d] _assert_contig_locked(ctg=%s, chr=%s lock=%s)\n",
+                 $ctg->display_id, $chr->display_id,
+                 join ' + ', map { $_->describe } $slb->locks);
     foreach my $seg (@$proj) {
         my $ctg_on_chr = $seg->[2]->sub_Slice($seg->[0], $seg->[1]);
-        $slb->assert_bumped($ctg_on_chr);
+# This is wrong: sub_Slice(...) is not needed, and
+# we may get projections onto other chromosome:Otter $chr
+# Just tell what's going past.
+        warn sprintf("[d]   seg ctg[%d..%d] -> %s -> %s\n",
+                     $seg->[0],$seg->[1], $seg->[2]->display_id,
+                     $ctg_on_chr->display_id);
+#        $slb->assert_bumped($ctg_on_chr);
     }
     return;
 }
