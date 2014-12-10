@@ -342,13 +342,24 @@ sub _assert_contig_locked {
     my $to_cs = $chr->coord_system;
     my $proj = $ctg->project($to_cs->name, $to_cs->version);
 
-    if (1 != @$proj) {
-        my $ctg_id = $ctg->dbID;
-        my $chr_id = $chr->dbID;
-        my $n = @$proj;
-        die "contig id=$ctg_id doesn't project cleanly (n=$n) to chromosome id=$chr_id";
-        # I expected that it should, so didn't consider $n != 1
-    }
+## This test is neither necessary nor sufficient.  RT#439403
+#
+#    if (1 != @$proj) {
+#        my $ctg_id = $ctg->dbID;
+#        my $chr_id = $chr->dbID;
+#        my $n = @$proj;
+#        die "contig id=$ctg_id doesn't project cleanly (n=$n) to chromosome id=$chr_id";
+#        # I expected that it should, so didn't consider $n != 1
+#    }
+
+    # We check the contig (as it maps to this chromosome) is wholly
+    # within the locked region.
+    #
+    # This doesn't prevent the same contig (or part) being "locked" as
+    # part of another chromosome range - different chromosome or
+    # multiple-mapping of the contig.
+    #
+    # Proceed anyway.  RT#439403
 
     foreach my $seg (@$proj) {
         my $ctg_on_chr = $seg->[2]->sub_Slice($seg->[0], $seg->[1]);
