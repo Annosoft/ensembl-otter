@@ -6,6 +6,7 @@ package Bio::Otter::Vulgar;
 use strict;
 use warnings;
 
+no if $] >= 5.018, warnings => "experimental::smartmatch";
 use feature 'switch';
 
 use Bio::Otter::Log::Log4perl 'logger';

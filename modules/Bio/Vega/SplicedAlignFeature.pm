@@ -6,6 +6,7 @@ package Bio::Vega::SplicedAlignFeature;
 use strict;
 use warnings;
 
+no if $] >= 5.018, warnings => "experimental::smartmatch";
 use feature 'switch';
 
 use List::MoreUtils;

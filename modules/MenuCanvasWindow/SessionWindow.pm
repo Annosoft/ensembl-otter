@@ -4,6 +4,7 @@ package MenuCanvasWindow::SessionWindow;
 use strict;
 use warnings;
 
+no if $] >= 5.018, warnings => "experimental::smartmatch";
 use feature 'switch';
 
 use Carp;
