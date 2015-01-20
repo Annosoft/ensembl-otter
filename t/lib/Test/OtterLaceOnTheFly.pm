@@ -179,6 +179,7 @@ sub run_otf_test {
         %$extra_builder_args,
                                                                              }]);
     my $request = $builder->prepare_run;
+    isa_ok($request, 'Bio::Otter::Lace::DB::OTFRequest');
 
     my $runner = new_ok( $test->{runner_class} => [
                              request         => $request,

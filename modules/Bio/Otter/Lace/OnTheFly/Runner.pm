@@ -38,6 +38,7 @@ sub _require_resultset_class {     ## no critic (Subroutines::ProhibitUnusedPriv
 
 has query_seqs => ( is       => 'ro',
                     isa      => 'SeqListClass',
+                    lazy     => 1,
                     builder  => '_fetch_query_seqs',
     );
 
