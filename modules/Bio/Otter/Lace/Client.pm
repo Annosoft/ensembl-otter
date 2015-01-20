@@ -188,9 +188,14 @@ sub get_log_dir {
     my ($self) = @_;
     my $home = __user_home();
     my $log_dir = "$home/.otter";
-    if (mkdir($log_dir)) {
+    if (-d $log_dir && -w _) {
+        # ok
+    } elsif (mkdir($log_dir)) {
         warn "Made logging directory '$log_dir'\n"; # logging not set up, so this must use 'warn'
-        return;
+    } else {
+        # else we're in trouble,
+        warn "mkdir($log_dir) failed: $!";
+        die "Cannot log to $log_dir"; # error message eaten by broken logger
     }
     return $log_dir;
 }
