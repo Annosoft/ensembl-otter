@@ -1164,7 +1164,7 @@ sub add_locus_editing_widgets {
     my $de = $de_frame->Entry(
         -width              => 38,
         -exportselection    => 1,
-        -font               => $self->named_font('menu'),
+        -font               => $self->named_font('prop'),
         );
     $de->pack(-side => 'left');
     $de->insert(0, $locus_description);

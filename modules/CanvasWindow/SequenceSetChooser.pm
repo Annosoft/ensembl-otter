@@ -121,11 +121,11 @@ sub initialise { # alias provided for BaseWindow->in_Toplevel(... { init => ... 
 sub draw {
     my ($self) = @_;
 
-    my $size    = $self->font_size;
     my $canvas  = $self->canvas;
 
-    my $font_def = $self->font_fixed_bold;
-    my $helv_def = ['Helvetica', $size, 'normal'];
+    my ($font_def, $size, $row_height) =
+      $self->named_font(listbold => 'linespace', 'linegap');
+    my $helv_def = $self->named_font('menu');
 
     my $ds = $self->Client->get_DataSet_by_name($self->name);
 

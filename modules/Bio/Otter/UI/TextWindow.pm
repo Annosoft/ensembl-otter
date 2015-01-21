@@ -19,7 +19,7 @@ sub new {
     my $window = $top->Scrolled(
         'ROText',
         -scrollbars             => 'e',
-        -font                   => $parent->font_fixed,
+        -font                   => $parent->named_font('mono'),
         -padx                   => 6,
         -pady                   => 6,
         -relief                 => 'groove',

@@ -402,10 +402,9 @@ sub draw_evidence {
     my $canvas = $self->canvas;
     $canvas->delete('all');
 
-    my $norm = $self->font_fixed;
-    my $bold = $self->font_fixed_bold;
-    my $size = $self->font_size;
-    my $row_height = $size + int($size / 6);
+    my ($norm, $size, $row_height) =
+      $self->named_font('mono', 'linespace', 'linegap');
+    my $bold = $self->named_font('listbold');
     my $type_pad = $row_height / 2;
     my $x = $size;
 
