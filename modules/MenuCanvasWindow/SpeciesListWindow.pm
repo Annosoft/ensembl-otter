@@ -336,6 +336,7 @@ sub draw {
 
     my ($font, $size, $row_height) =
       $self->named_font(listbold => 'linespace', 'linegap');
+    $row_height = int 1.2 * $row_height;
     for (my $i = 0; $i < @dsl; $i++) {
         my $data_set = $dsl[$i];
         my $x = $size;

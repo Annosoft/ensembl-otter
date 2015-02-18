@@ -453,7 +453,7 @@ sub draw_Item {
 
     my $canvas = $self->canvas;
     my $row_height = $self->row_height;
-    my $pad = 0; # int $self->font_size * 0.4; # linespace includes some padding
+    my $pad = int $self->font_size * 0.25;
     my $x = $row_height * $item->indent;
     my $y = $row * ($row_height + $pad);
 
