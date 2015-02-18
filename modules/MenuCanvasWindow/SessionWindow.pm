@@ -158,7 +158,7 @@ sub colour_init {
     my ($self, $top, @widg) = @_;
     my $colour = $self->session_colour;
     my $tpath = $top->PathName;
-    $top->configure(-borderwidth => 3, -background => $colour);
+    $top->configure(-borderwidth => 4, -background => $colour);
     foreach my $widg (@widg) {
         $widg = $top->Widget("$tpath.$widg") unless ref($widg);
         next unless $widg; # TranscriptWindow has some PathName parts
@@ -1081,7 +1081,7 @@ sub make_status_panel {
     my @colors = map { $status_colors->{$_}->[1] } @display_statuses;
 
     my $top = $self->top_window();
-    my $status_frame = $top->Frame(Name => 'status_frame');
+    my $status_frame = $top->Frame(Name => 'status_frame', -borderwidth => 2);
     my @status_text = @display_statuses;
     $self->{_status_text} = \@status_text;
 
@@ -1099,8 +1099,6 @@ sub make_status_panel {
     $status_bar->pack(
         -side => 'top',
         -fill => 'x',
-        -padx => 2,
-        -pady => 2,
         );
 
     $status_bar->value((0) x @display_statuses);
@@ -1130,18 +1128,17 @@ sub make_search_panel {
     my ($self) = @_;
 
     my $top = $self->top_window();
-    my $search_frame = $top->Frame(Name => 'search_frame');
+    my $frame = $top->Frame(
+        -borderwidth    => 2,
+        )->pack(-side => 'top', -fill => 'x');
+    my $search_frame = $frame->Frame->pack(-side => 'top');
 
-    $search_frame->Frame(Name => 'filler_L', -width => 1)->pack(-side => 'left', -expand => 1);
-
-    $search_frame->pack(-side => 'top', -fill => 'x');
+    my @button_pack = qw{ -side left -padx 2 };
 
     my $search_box = $search_frame->Entry(
         -width => 22,
         );
-    $search_box->pack(-side => 'left');
-
-    $search_frame->Frame(Name => 'filler', -width => 6)->pack(-side => 'left');
+    $search_box->pack(@button_pack);
 
     # Is hunting in CanvasWindow?
     my $hunter = sub{
@@ -1152,7 +1149,7 @@ sub make_search_panel {
          -text      => 'Find',
          -command   => $hunter,
          -underline => 0,
-         )->pack(-side => 'left');
+         )->pack(@button_pack);
 
     my $clear_command = sub {
         $search_box->delete(0, 'end');
@@ -1161,7 +1158,7 @@ sub make_search_panel {
         -text      => 'Clear',
         -command   => $clear_command,
         -underline => 2,
-        )->pack(-side => 'left');
+        )->pack(@button_pack);
     $top->bind('<Control-e>',   $clear_command);
     $top->bind('<Control-E>',   $clear_command);
 
@@ -1173,8 +1170,6 @@ sub make_search_panel {
     $button->bind('<Destroy>', sub{
         $self = undef;
         });
-
-    $search_frame->Frame(Name => 'filler_R', -width => 1)->pack(-side => 'left', -expand => 1);
 
     return;
 }

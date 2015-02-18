@@ -60,10 +60,8 @@ sub initialise {
     $match_frame->Label(
         -text   => 'Accessions:',
         -anchor => 's',
-        -padx   => 6,
     )->pack(-side => 'left');
     $self->match($match_frame->Entry->pack(-side => 'left', -expand => 1, -fill => 'x'));
-    $match_frame->Frame(-width => 6,)->pack(-side => 'left');
 
     my $update = sub {
         $self->accessions_from_clipboard;
@@ -72,7 +70,7 @@ sub initialise {
         -text      => 'Fetch from clipboard',
         -underline => 0,
         -command   => $update,
-    )->pack(-side => 'left');
+    )->pack(-side => 'left', -padx => 4);
     $match_frame->Button(
         -text      => 'Clear',
         -underline => 0,
@@ -87,13 +85,9 @@ sub initialise {
     $file_frame->Label(
         -text   => 'Fasta file:',
         -anchor => 's',
-        -padx   => 6,
     )->pack(-side => 'left');
 
-    $self->fasta_file($file_frame->Entry(-textvariable => \$fname)->pack(-side => 'left', -expand => 1, -fill => 'x'));
-
-    # Pad between entries
-    $file_frame->Frame(-width => 6,)->pack(-side => 'left');
+    $self->fasta_file($file_frame->Entry(-textvariable => \$fname)->pack(-side => 'left', -expand => 1, -fill => 'x', -padx => 4));
 
     $file_frame->Button(
         -text    => 'Browse...',
@@ -148,7 +142,6 @@ sub initialise {
     $txt_frame->Label(
         -text   => 'Fasta sequence:',
         -anchor => 'w',
-        -padx   => 6,
     )->pack(@frame_pack);
     $self->fasta_txt(
         $txt_frame->Scrolled(
@@ -194,6 +187,7 @@ sub initialise {
                 -variable => $variable,
                 -text     => $text,
                 -value    => $value,
+                -offrelief  => 'flat',
                 )->pack(-side => 'left', -expand => 1, -fill => 'x');
         }
     }
@@ -235,14 +229,21 @@ sub initialise {
         );
     $self->set_entry('max_intron_length', $MAX_INTRON_LENGTH);
 
-    $top->Checkbutton(
+    my $cb_frame = $top->Frame->pack(
+        -fill => 'x',
+        -side => 'top',
+        );
+    $cb_frame->Checkbutton(
         -variable => \$self->{_clear_existing},
         -text     => 'Clear existing OTF alignments',
         -anchor   => 'w',
     )->pack(-side => 'top');
 
     ### Commands
-    my $button_frame = $top->Frame(Name => 'button')->pack(@frame_pack);
+    my $button_frame = $top->Frame(
+        Name    => 'button',
+        -border => 2,
+        )->pack(@frame_pack);
     my $doing_launch = 0;       # captured by closure...
     my $launch       = sub {
         if ($doing_launch) {
@@ -292,7 +293,7 @@ sub initialise {
     $top->bind('<Destroy>', sub { $self = undef; });
     $self->set_minsize;
 
-    $self->colour_init(qw( button query.border param.border input._region_target.border input._mask_target.border ));
+    $self->colour_init;
 
     return;
 }

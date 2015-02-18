@@ -33,8 +33,10 @@ sub new {
     my $self = CanvasWindow->new($tk, 800, 400, 'ose');
     bless($self, $pkg);
 
-    my $bottom_frame = $tk->Frame->pack(
-        qw{ -side top -padx 4 -pady 4 }
+    my $bottom_frame = $tk->Frame(
+        -border => 2,
+    )->pack(
+        qw{ -side top -fill both }
     );
 
     $self->menu_bar($menu_frame);
@@ -105,7 +107,7 @@ sub initialise {
     my $view_menu   = $self->make_menu('View');
     my $select_menu = $self->make_menu('Select');
 
-    my @button_pack = qw{ -side left -padx 4 };
+    my @button_pack = qw{ -side left -padx 2 };
 
     my $cllctn = $self->AceDatabase->ColumnCollection;
     my $hist = Bio::Otter::Lace::Chooser::SearchHistory->new($cllctn);
@@ -194,25 +196,25 @@ sub initialise {
         );
     }
 
-    my $bottom_frame = $self->bottom_frame;
+    my $button_frame = $self->bottom_frame->Frame->pack(-side => 'top');
 
     # The user can press the Cancel button either before the AceDatabase is made
     # (in which case we destroy ourselves) or during an edit session (in which
     # case we just withdraw the window).
     my $wod_cmd = sub { $self->withdraw_or_destroy };
-    my $wod_btn = $bottom_frame->Button(
+    my $wod_btn = $button_frame->Button(
         -text => 'Cancel',
         -command => $wod_cmd,
         )->pack(@button_pack);
     $top->protocol( 'WM_DELETE_WINDOW', $wod_cmd );
 
-    $bottom_frame->Button(
+    $button_frame->Button(
         -text => 'Select ZMap',
         -command => sub { $self->zmap_select_window },
         )->pack(@button_pack);
 
     my $load_cmd = sub { $self->load_filters };
-    my $load_btn = $bottom_frame->Button(
+    my $load_btn = $button_frame->Button(
         -text => 'Load',
         -command => $load_cmd,
         )->pack(@button_pack);
@@ -261,10 +263,8 @@ sub colour_init {
     my ($self) = @_;
     my $top = $self->top_window;
     my $colour = $self->AceDatabase->colour;
-    my $tpath = $top->PathName;
 
-    $top->configure(-borderwidth => 3, -background => $colour);
-    $self->bottom_frame->configure(-background => $colour);
+    $top->configure(-borderwidth => 4, -background => $colour);
     return;
 }
 

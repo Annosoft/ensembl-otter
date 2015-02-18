@@ -156,7 +156,10 @@ sub initialise {
     }
 
     {
-        my $button_frame = $top->Frame(Name => 'button_frame')->pack(
+        my $button_frame = $top->Frame(
+            Name => 'button_frame',
+            -border => 2,
+        )->pack(
             -side => 'top',
             -fill => 'x',
             );
@@ -186,7 +189,7 @@ sub initialise {
         $button_frame->Button(
             -text => 'Delete',
             -command => $delete,
-            )->pack(-side => 'left');
+            )->pack(-side => 'left', -padx => 4);
 
         my $close_window = sub{ $top->withdraw; };
         $top->bind('<Control-w>',           $close_window);
@@ -275,8 +278,8 @@ sub dotter_button {
 
 sub _colour_init {
     my ($self) = @_;
-    my $top = $self->canvas->toplevel;
-    return $self->SessionWindow->colour_init($top, 'button_frame');
+
+    return $self->SessionWindow->colour_init($self->top_window);
 }
 
 sub align_enable {

@@ -478,8 +478,8 @@ sub add_subseq_exons {
 
 sub _colour_init {
     my ($self) = @_;
-    return $self->SessionWindow->colour_init
-      ($self->canvas->toplevel, qw( transcript.border locus.border ));
+
+    return $self->SessionWindow->colour_init($self->top_window);
 }
 
 {

@@ -142,7 +142,7 @@ sub initialise {
 
     $top->bind('<Destroy>', sub{ $self = undef });
 
-    $self->colour_init(qw( button genomic.border ));
+    $self->colour_init;
 
     return;
 }
