@@ -149,12 +149,12 @@ sub _arrange {
     # unlike progressbar I need to redraw these each time.
     # actually resizing them might be better...
     my $colors = $c->{Configure}{'-colors'} || [ 'green', 'red', 'grey55' ];	
-    $c->delete($c->find('all'));	
+    $c->delete('all');	
     $c->createRectangle(
         0, 0, $w+$x*2, $h+$y*2,
         -fill    => $c->{Configure}{'-troughcolor'},
         -width   => 0,
-        -outline => undef
+        -outline => undef,
     );
     my $total;
     my $count_value = scalar(@$value)-1;
@@ -165,21 +165,21 @@ sub _arrange {
     $total = $total ? $total : 1;
     my $curx = $x;
     my $cury = $y;
-    foreach my $index (0..$count_value) {
-	my $size = ($length*$value->[$index])/$total;
-	my $ud = $horz?$width:$size;
-	my $lr = $horz?$size:$width;
-	$c->{cover}->[$index] = $c->createRectangle(
-            $curx, $cury, $curx+$lr-1, $cury+$ud-1,
+    foreach my $index (0 .. $count_value) {
+        my $size = ($length * $value->[$index]) / $total;
+        my $ud   = $horz ? $width : $size;
+        my $lr   = $horz ? $size : $width;
+        $c->{cover}->[$index] = $c->createRectangle(
+            $curx, $cury, $curx + $lr - 1, $cury + $ud - 1,
             -fill    => $colors->[$index],
-            -width   => 1,
-            -outline => 'black'
+            -width   => 0.5,
+            -outline => 'white',
         );
-	$curx+=$horz?$lr:0;
-	$cury+=$horz?0:$ud;
+        $curx += $horz ? $lr : 0;
+        $cury += $horz ? 0   : $ud;
     }
 
-    my $labels = $c->{Configure}{'-labels'};
+    my $labels  = $c->{Configure}{'-labels'};
     my $balloon = $c->{Configure}{'-balloon'};
     if ($labels && $balloon) {
         # apply label
