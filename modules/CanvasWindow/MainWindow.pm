@@ -81,7 +81,7 @@ sub add_default_options {
         CanvasWindow*Menubutton.padY            6
         CanvasWindow*Balloon*background         #ffffcc
         CanvasWindow*Text*background            white
-        CanvasWindow*ProgressBar*troughColour   #aaaaaa
+        CanvasWindow*ProgressBar*troughColor    #aaaaaa
         CanvasWindow*ProgressBar*relief         sunken
         CanvasWindow*ProgressBar*foreground     gold
         };
