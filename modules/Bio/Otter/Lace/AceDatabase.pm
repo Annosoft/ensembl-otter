@@ -399,33 +399,50 @@ sub colour {
 
 {
     my %colour_in_use; # key = colour, value = list of weakened SCALARref
+    my @colour_list;
+
     sub next_session_colour {
         my ($self) = @_;
-        my @col = $self->session_colourset;
-        my %prio; # key=colour, value=priority
-        @prio{@col} = reverse(1 .. scalar @col);
 
-        # Remove no-longer-used
-        while (my ($col, $use) = each %colour_in_use) {
-            if (@$use) {
-                # colour in use, now or recently
-                my @use = grep { defined } @$use;
-                for (my $i=0; $i<@use; $i++) { weaken($use[$i]) }
-                $colour_in_use{$col} = \@use;
-                $prio{$col} = -@use # set negative or zero priority
-                  +($prio{$col} / 1000); # collision buster
-            } else {
-                # colour became unused last time, forget it
-                delete $colour_in_use{$col};
+        unless (@colour_list) {
+            @colour_list = $self->session_colourset;
+        }
+
+        my $threshold = 1;
+        my $colour_ref = undef;
+        for (my $i = 0; $i < @colour_list; $i++) {
+            # Rotate list of colours
+            my $col = shift @colour_list;
+            push @colour_list, $col;
+
+            my $use = $colour_in_use{$col} ||= [];
+            for (my $j = 0; $j < @$use; ) {
+                if ($use->[$j]) {
+                    # Colour still in use
+                    $j++;
+                }
+                else {
+                    # Weakend ref has gone away, so remove empty element.
+                    splice(@$use, $j, 1);
+                }
+            }
+
+            if (@$use < $threshold) {
+                # Found a colour below use threhold
+                $colour_ref = \$col;
+                push(@$use, $colour_ref);
+                weaken($use->[-1]);
+                last;
+            }
+            elsif ($i == $#colour_list) {
+                # Reached the end of the list; all the colours are in use!
+                # Up the threhold and start again.
+                $threshold++;
+                $i = 0;
             }
         }
 
-        # Choose the next & remember
-        my ($next) = sort { $prio{$b} <=> $prio{$a} } keys %prio;
-        my $colref = \$next;
-        push @{ $colour_in_use{$next} }, $colref;
-        weaken($colour_in_use{$next}->[-1]);
-        return $colref;
+        return $colour_ref;
     }
 }
 
