@@ -15,12 +15,12 @@ sub update_SimpleFeatures_xml {
     my $new_featuresets = _group_by_method_name($new_assembly->get_all_SimpleFeatures);
 
     my %featuresets = map { $_ => 1 } (keys %$old_featuresets, keys %$new_featuresets);
-    for my $featureset (keys %featuresets) {
-        my $old_xml = _featureset_xml($old_featuresets->{$featureset}, $offset);
-        my $new_xml = _featureset_xml($new_featuresets->{$featureset}, $offset);
-        $delete_featureset_xml->{$featureset} =
+    for my $fs_name (keys %featuresets) {
+        my $old_xml = _featureset_xml($old_featuresets->{$fs_name}, $offset);
+        my $new_xml = _featureset_xml($new_featuresets->{$fs_name}, $offset);
+        $delete_featureset_xml->{$fs_name} =
             _list_subtract($old_xml, $new_xml);
-        $create_featureset_xml->{$featureset} =
+        $create_featureset_xml->{$fs_name} =
             _list_subtract($new_xml, $old_xml);
     }
 
@@ -30,16 +30,21 @@ sub update_SimpleFeatures_xml {
         );
 }
 
-sub _group_by_method_name { ## no critic (Subroutines::RequireArgUnpacking)
-    my $featuresets = { };
-    push @{$featuresets->{$_->method_name}}, $_ for @_;
+sub _group_by_method_name {
+    my @features = @_;
+
+    my $featuresets = {};
+    foreach my $f (@features) {
+        my $group = $featuresets->{$f->method_name} ||= [];
+        push @$group, $f;
+    }
     return $featuresets;
 }
 
 sub _featureset_xml {
-    my ($featureset_list, $offset) = @_;
-    $featureset_list ||= [ ];
-    return [ map { $_->zmap_xml_feature_tag($offset) } @{$featureset_list} ];
+    my ($feature_list, $offset) = @_;
+    $feature_list ||= [ ];
+    return [ map { $_->zmap_xml_feature_tag($offset) } @{$feature_list} ];
 }
 
 sub _xml_string {
@@ -67,8 +72,8 @@ sub _xml_string {
 
 sub _list_subtract {
     my ($l0, $l1) = @_;
-    my %l1 = map { $_ => 1 } @{$l1};
-    return [ grep { ! exists $l1{$_} } @{$l0} ];
+    my %l1 = map { $_ => 1 } @$l1;
+    return [ grep { ! $l1{$_} } @$l0 ];
 }
 
 1;

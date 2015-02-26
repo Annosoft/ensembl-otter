@@ -110,6 +110,7 @@ sub zmap_xml_feature_tag {
             #style           => $style, # XXX: we shouldn't need the style as this can be established from the featureset name
             start_not_found => $snf ? $snf : 'false',
             end_not_found   => $self->end_not_found ? 'true' : 'false',
+            ontology        => 'Sequence',
             @locus_prop,
     });
 
