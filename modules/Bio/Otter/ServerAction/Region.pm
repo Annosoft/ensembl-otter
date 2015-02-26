@@ -142,14 +142,9 @@ C<<$Assembly->generate_description_for_clone>> .
 =cut
 
 sub DE_region {
-    my $self = shift;
-    return $self->__generate_desc_and_kws_for_clone($self->slice);
-}
+    my ($self) = @_;
 
-sub __generate_desc_and_kws_for_clone {
-    my ($self, $region) = @_;
-
-    my $flanking = 100_000; # chance to catch genes with only intron in $region
+    my $region = $self->slice;
 
     my $DEBUG;
 #    $DEBUG = [];
@@ -172,9 +167,8 @@ sub __generate_desc_and_kws_for_clone {
     # identify the loci in this assembly
 #    foreach my $sub (sort { ace_sort($a->name, $b->name) } $self->get_all_SubSeqs) {
 
-    my $region_plus = $region->expand($flanking);
     my $GA = $region->adaptor->db->get_GeneAdaptor;
-    my @loci = @{ $GA->fetch_all_by_Slice( $region_plus ) };
+    my @loci = @{ $GA->fetch_all_by_Slice( $region ) };
 
     my $r_len = $region->length;
     my (%g2ts, %ts2g, @ts, %g_trunc, %ts_name, %g_name);
@@ -347,7 +341,7 @@ my ($clone_accession, $clone_name) =
         elsif ($lname !~ /\.\d/) {
             $line .= "the $lname gene for $desc" ;
             push @DEline,\$line;
-            push @keywords, $locus;
+            push @keywords, $lname;
         }
         else {
             $line .= "a gene for ".A($desc);
