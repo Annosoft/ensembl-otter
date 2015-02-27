@@ -144,264 +144,130 @@ C<<$Assembly->generate_description_for_clone>> .
 sub DE_region {
     my ($self) = @_;
 
-    my $region = $self->slice;
+    my $slice = $self->slice;
 
-    my $DEBUG;
-#    $DEBUG = [];
-
-    # set to true to generate a description that specifies if the
-    # clone contains a central part or the 5' or 3' end of partial
-    # loci - but note that this can only work if the current assembly
-    # happens to contain the remainder of the locus. Otherwise the
-    # description will (rather boringly) just state that the clone
-    # contains 'part of' the locus, but will at least be consistent!
-    my $BE_CLEVER = 0;
-
-    my %locus_sub; # key = gene name, value = \@tsct
-
-    my %locus_is_transposon;
-    my %locus_start;
-    my %locus_end;
-    my %locus_strand;
-
-    # identify the loci in this assembly
-#    foreach my $sub (sort { ace_sort($a->name, $b->name) } $self->get_all_SubSeqs) {
-
-    my $GA = $region->adaptor->db->get_GeneAdaptor;
-    my @loci = @{ $GA->fetch_all_by_Slice( $region ) };
-
-    my $r_len = $region->length;
-    my (%g2ts, %ts2g, @ts, %g_trunc, %ts_name, %g_name);
-    foreach my $g (@loci) {
-        my @g_ts = @{ $g->get_all_Transcripts };
-        $g2ts{"$g"} = \@g_ts;
-        foreach my $ts (@g_ts) {
-            $ts2g{"$ts"} = $g;
-            my ($n) = @{ $ts->get_all_Attributes('name') };
-            $ts_name{"$ts"} = $n && $n->value;
+    my $GA   = $slice->adaptor->db->get_GeneAdaptor;
+    my @loci = @{ $GA->fetch_all_by_Slice_untruncated($slice) };
+    for (my $i = 0; $i < @loci;) {
+        if ($loci[$i]->source eq 'havana') {
+            $i++;
         }
-        $g_trunc{"$g"} = 1 if $g->start < 1 || $g->end > $r_len;
-
-        my ($n) = @{ $g->get_all_Attributes('name') };
-        $g_name{"$g"} = $n ? $n->value : $g->stable_id;
-
-        push @ts, @g_ts;
+        else {
+            # Remove non-havana genes
+            splice @loci, $i, 1;
+        }
     }
 
-    foreach my $sub (sort { (defined $ts_name{$a}) <=> (defined $ts_name{$b})
-                              || $ts_name{$a} cmp $ts_name{$b} } @ts) {
-        my $locus = $ts2g{$sub};
+    # Patterns for clone accession or clone name based gene names
+    my $clone_accession = qr{^[A-Z]{1,2}\d{5,6}(\.\d{1,3})?$};
+    my $clone_name      = qr{^[A-Z]{1,2}\d{1,3}-?\d{1,3}[A-Z]\d{1,3}(\.\d{1,3})?$};
 
-        my $lname = $g_name{$locus};
-
-        # ignore loci that are not havana annotated genes
-        next unless $locus->source eq 'havana';
-#        next unless ($sub->Locus->is_truncated || $sub->GeneMethod->mutable);
-
-        my $tsct_list = $locus_sub{$lname} ||= [];
-        push(@$tsct_list, $sub);
-
-        # record if the locus is a transposon (some in ZF)
-        $locus_is_transposon{$lname} = 1 if $locus->biotype =~ /transposon/i;
-
-        # track the start, end and strand of the locus
-
-        my $start = $sub->start;
-        my $end = $sub->end;
-        my $strand = $sub->strand;
-
-        $locus_start{$lname} ||= $start;
-        $locus_end{$lname} ||= $end;
-        $locus_strand{$lname} ||= $strand;
-
-        $locus_start{$lname} = $start if $start < $locus_start{$lname};
-        $locus_end{$lname} = $end if $end > $locus_end{$lname};
-        die "Mixed transcript strands on locus $lname" if $strand != $locus_strand{$lname};
-
-    }
-
-    my @region_chr = ($region->start, $region->end);
-    my $cstart = 1;
-    my $cend = $region_chr[1] - $region_chr[0] + 1;
-
-my ($clone_accession, $clone_name) =
-  ('XXX:nil',
-   qr{^[A-Z]{1,2}\d{1,3}-?\d{1,3}[A-Z]\d{1,3}(\.\d{1,2})?$}); # generic clone name
-
-#    my $clone_accession = $clone->accession;
-#    my $clone_name = $clone->clone_name;
-
-    push @$DEBUG,
-      { region => "chromosomal (@region_chr) => local ($cstart $cend)",
-        clone_accession => $clone_accession,
-        clone_name => $clone_name }
-        if $DEBUG;
-
-    my $final_line = 'Contains ';
     my @keywords;
-    my $novel_gene_count = 0;
+    my $novel_gene_count      = 0;
     my $part_novel_gene_count = 0;
     my @DEline;
 
-    # loop through the loci in 5' -> 3' order 
-    foreach my $loc_name (sort {$locus_start{$a} <=> $locus_start{$b}} keys %locus_sub) {
-        push @$DEBUG, "  checking next locus: $loc_name" if $DEBUG;
+    # Loop through the loci in 5' -> 3' order
+    foreach my $gene (sort {$a->start <=> $b->start} @loci) {
+        my ($name_attrib) = @{ $gene->get_all_Attributes('name') };
+        my $gene_name = $name_attrib ? $name_attrib->value : $gene->stable_id;
 
-        my $tsct_list = $locus_sub{$loc_name};
-        my $locus = $ts2g{ $tsct_list->[0] };
-        my $lname = $g_name{$locus};
-        my $lstrand = $locus->strand;
-
-        # ignore loci with prefixes
-# XXX: prefix would be in gene.source ?  already excluded
-        next if $lname =~ /^.+:/;
-
-        my $desc = $locus->description;
-
-        push @$DEBUG, "  desc: $desc" if $DEBUG;
-
-        # ignore loci without descriptions
-        next unless $desc;
-
-        # ignore transposons
-        next if $locus_is_transposon{$loc_name};
-
-        # get the start and end of the locus
-        my $lstart = $locus_start{$lname};
-        my $lend = $locus_end{$lname};
-
-        push @$DEBUG, "  locus: $lstart-$lend" if $DEBUG;
-
-        # establish if any part of this locus lies on this clone
-        my $line;
-
-        my $partial_text = 'part of ';
-
-        if ($lstart >= $cstart && $lend <= $cend) {
-            # this locus lies entirely within this clone
-            $line = '';
-        }
-        elsif ($lstart < $cstart && $lend > $cend) {
-            # a central part of the locus lies in this clone
-            $line = $BE_CLEVER ?
-                'a central part of ' :
-                $partial_text;
-        }
-        elsif ($lend >= $cstart && $lend <= $cend) {
-            # the end of this locus lies in this clone
-            $line = $BE_CLEVER ?
-                'the '.($lstrand == 1 ? "3'" : "5'").' end of ' :
-                $partial_text;
-        }
-        elsif ($lstart >= $cstart && $lstart <= $cend) {
-            # the start of this locus lies in this clone
-            $line = $BE_CLEVER ?
-                'the '.($lstrand == 1 ? "5'" : "3'").' end of ' :
-                $partial_text;
-        }
-        else {
-            # no part of this locus lies on this clone
-            next;
-        }
-
-        $line = $partial_text if $g_trunc{$locus};
-
-        $desc =~ s/\s+$//;
-
-        push @$DEBUG, "  desc: $desc" if $DEBUG;
-
+        my $desc = $gene->description
+          or next;
         next if $desc =~ /artefact|artifact/i;
 
-        if ($desc =~ /novel\s+(protein|transcript|gene)\s+similar/i) {
-            $line .= "the gene for ".A($desc);
-            push @DEline, \$line;
+        my $line = '';
+
+        # Is all of the gene in the slice?
+        if ($gene->start < 1 and $gene->end > $slice->length) {
+            $line = 'an internal part of ';
         }
-        elsif (($desc =~ /(novel|putative) (protein|transcript|gene)/i) ) {
+        elsif ($gene->start < 1 and $gene->end <= $slice->length) {
+            my $end = $gene->strand == 1 ? q{3'} : q{5'};
+            $line = "the $end end of ";
+        }
+        elsif ($gene->start >= 1 and $gene->end > $slice->length) {
+            my $end = $gene->strand == 1 ? q{5'} : q{3'};
+            $line = "the $end end of ";
+        }
+
+        if ($desc =~ /novel\s+(protein|transcript|gene)\s+similar/i) {
+            $line .= "the gene for " . A($desc);
+            push @DEline, $line;
+        }
+        elsif (($desc =~ /(novel|putative) (protein|transcript|gene)/i)) {
             if ($desc =~ /(zgc:\d+)/) {
                 $line .= "a gene for a novel protein ($1)";
-                push @DEline, \$line;
+                push @DEline, $line;
             }
             else {
                 $line ? $part_novel_gene_count++ : $novel_gene_count++;
             }
         }
         elsif ($desc =~ /pseudogene/i) {
-            my $lname = $g_name{$locus};
-            if ($lname !~ /$clone_accession/ &&
-                $lname !~ /$clone_name/) {
-                $line .= A($desc).' '.$lname;
+            if (   $gene_name !~ /$clone_accession/
+                && $gene_name !~ /$clone_name/)
+            {
+                $line .= A($desc) . ' ' . $gene_name;
             }
             else {
+
                 # in a pseudogene named after its clones,
                 # locusname is not interesting
                 $line .= A($desc);
             }
-            push @DEline, \$line ;
+            push @DEline, $line;
         }
-        elsif ($lname !~ /\.\d/) {
-            $line .= "the $lname gene for $desc" ;
-            push @DEline,\$line;
-            push @keywords, $lname;
+        elsif ($gene_name !~ /\.\d/) {
+            $line .= "the $gene_name gene for $desc";
+            push @DEline,   $line;
+            push @keywords, $gene_name;
         }
         else {
-            $line .= "a gene for ".A($desc);
-            push @DEline, \$line;
+            $line .= "a gene for " . A($desc);
+            push @DEline, $line;
         }
-
-        push @$DEBUG, "  line: $line" if $DEBUG;
     }
 
     if ($novel_gene_count) {
         if ($novel_gene_count == 1) {
-            my $line = "a novel gene";
-            push @DEline, \$line;
+            push @DEline, "a novel gene";
         }
         else {
-            my $line = NUMWORDS($novel_gene_count)." novel genes";
-            push @DEline, \$line;
+            push @DEline, NUMWORDS($novel_gene_count) . " novel genes";
         }
     }
 
     if ($part_novel_gene_count) {
         if ($part_novel_gene_count == 1) {
-            my $line = "part of a novel gene";
-            push @DEline, \$line;
+            push @DEline, "part of a novel gene";
         }
         else {
-            my $line = "parts of ".NUMWORDS($part_novel_gene_count)." novel genes";
-            push @DEline, \$line;
+            push @DEline, "parts of " . NUMWORDS($part_novel_gene_count) . " novel genes";
         }
     }
 
-    my $lf = ""; # was "" in the AceDB version, "\n" makes boundaries clearer
-    my $range = scalar @DEline;
-    if ($range == 0) {
-        $final_line .= "no genes.";
-    }
-    elsif ($range == 1) {
-        $final_line .= ${$DEline[0]}.".";
-    }
-    elsif ($range == 2) {
-        $final_line .= ${$DEline[0]}. " and$lf ".${$DEline[1]}.".";
+    my $final_line = 'Contains';
+    if (@DEline == 0) {
+        $final_line .= ' no genes.';
     }
     else {
-        for (my $k = 0; $k < ($range - 2); $k++) {
-            $final_line .= ${$DEline[$k]}.",$lf ";
+        for (my $i = 0; $i < @DEline; $i++) {
+            my $join = ';';
+            if ($i == 0) {
+                $join = '';
+            }
+            elsif ($i == $#DEline) {
+                $join = '; and';
+            }
+            $final_line .= "$join $DEline[$i]";
         }
-        $final_line .= ${$DEline[$range -2]}." and$lf ".${$DEline[$range-1]}.".";
+        $final_line .= '.';
     }
 
-    push @$DEBUG,
-      { ts_name => \%ts_name, g_name => \%g_name,
-        DEline => [ map { $$_ } @DEline ], # JSON encodes only boolean scalar refs
-        pos => "DE:clone: $cstart-$cend",
-        g_pos => [ map { [$_->start, $_->end] } values %ts2g ],
-      } if $DEBUG;
-
     return {
-        keywords    => ( join "\n", @keywords ),
+        keywords    => join("\n", @keywords),
         description => $final_line,
-        ($DEBUG ? (_debug => $DEBUG) : ()),
     };
 }
 
