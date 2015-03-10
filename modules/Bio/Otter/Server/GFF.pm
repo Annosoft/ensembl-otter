@@ -268,14 +268,20 @@ sub _fasta {
 sub _fasta_item {
     my ($accession_info) = @_;
     my $sequence = $accession_info->{sequence};
+
+    $accession_info->{'taxon_id'} = $accession_info->{'taxon_list'};
+
     my @taxon_list = split /,/, $accession_info->{'taxon_list'};
-    @taxon_list == 1 or return; # we only handle single taxon IDs
-    ($accession_info->{'taxon_id'}) = @taxon_list; # has side-effect of adding to $accession_info, but we don't mind.
+    # Take the first taxon ID which beings with a non-zero digit.
+    # (Has side-effect of adding to $accession_info, but we don't mind.)
+    ($accession_info->{'taxon_id'}) = grep { $_ != 0 } @taxon_list;
+
     $accession_info->{'description'} = escape_fasta_description($accession_info->{'description'}); # ---"---
-    my $fasta_list = [ @{$accession_info}{fasta_header_column_order()} ];
-    $sequence =~ s/(.{70})/$1\n/g;
-    chomp $sequence;
-    my $item = sprintf ">%s\n%s\n", (join '|', @{$fasta_list}), $sequence;
+
+    my $item = '>' . (join '|', map { $accession_info->{$_} } fasta_header_column_order() ) . "\n";
+    while ($sequence =~ /(.{1,70})/g) {
+        $item .= $1 . "\n";
+    }
     return $item;
 }
 
