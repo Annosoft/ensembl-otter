@@ -6,8 +6,6 @@ use warnings;
 use DBI;
 use Readonly;
 use Time::HiRes qw( gettimeofday tv_interval );
-use List::Util 'shuffle';
-
 
 =pod
 
@@ -295,8 +293,7 @@ sub get_accession_info {
 sub _get_accessions_managed {
     my ($self, %opts) = @_;
     my $results = $opts{existing_results} = {};
-    my @want = shuffle @{ delete $opts{acc_list} };
-    # Shuffle to avoid accidentally saving the slow ones for last
+    my @want = @{ delete $opts{acc_list} };
 
     my $n_wanted = @want;
     while (@want) {
