@@ -9,10 +9,15 @@ use Carp;
 use base 'Exporter';
 our @EXPORT_OK = qw{ method2biotype_status biotype_status2method };
 
-# Known_CDS will overwrite Known in %biotype_status_to_method, but
-# this does not matter since the gene type does not get transmitted
-# back to acedb.
+# Known_CDS will overwrite Known in %biotype_status_to_method, but this does not
+# matter since the gene type does not get transmitted back to acedb.
+
 # Novel_Transcript will only be found as a gene type, not a transcript.
+
+# This table only lists the exceptions where the acedb method isn't just the
+# EnsEMBL biotype with the first letter in upper case and the EnsEMBL status is
+# UNKNOWN.
+
 my @method_biotype_status = qw{
 
     Known                           protein_coding          KNOWN
@@ -20,15 +25,11 @@ my @method_biotype_status = qw{
         Known_CDS                   protein_coding          KNOWN
         Novel_CDS                   protein_coding          NOVEL
         Putative_CDS                protein_coding          PUTATIVE
-        Nonsense_mediated_decay     =                       -
 
     Novel_Transcript                processed_transcript    KNOWN
     Novel_Transcript                processed_transcript    NOVEL
     Transcript                      processed_transcript    -
         Ambiguous_ORF               =                       -
-        Retained_intron             =                       -
-        Disrupted_domain            =                       -
-        IG_segment                  =                       -
         IG_gene                     =                       -
         IG_pseudogene               =                       -
         TR_gene                     =                       -
@@ -37,9 +38,10 @@ my @method_biotype_status = qw{
 
     Non_coding                      =                       -
         lincRNA                     =                       -
+        macro_lncRNA                =                       -
         Antisense                   =                       -
-        ncRNA_host                  =                       -
         3'_overlapping_ncRNA        =                       -
+        Bidirectional_promoter_lncRNA   =                   -
 
     Known_ncRNA                     =                       -
         miRNA                       =                       -
@@ -50,15 +52,6 @@ my @method_biotype_status = qw{
         snoRNA                      =                       -
         tRNA                        =                       -
         vaultRNA                    =                       -
-
-    Pseudogene                      =                       -
-        Processed_pseudogene        =                       -
-        Unprocessed_pseudogene      =                       -
-        Expressed_pseudogene        =                       -
-
-    Transposon                      =                       -
-
-    Artifact                        =                       -
 
     TEC                             =                       -
 
