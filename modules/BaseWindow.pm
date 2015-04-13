@@ -161,7 +161,7 @@ sub _bw_fonts {
     # "menu" should match CanvasWindow*font
 
     # Add variants
-    $font{prop_ubold} = { %{$font{prop}}, qw{ -weight bold -underline 1 -size 20 } };
+    $font{prop_ubold} = { %{$font{prop}}, qw{ -weight bold -underline 1 } };
     $font{listbold}   = { %{$font{mono}}, qw{ -weight bold } };
 
     while (my ($fontname, $opts) = each %font) {
