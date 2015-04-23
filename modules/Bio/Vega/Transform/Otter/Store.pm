@@ -7,6 +7,7 @@ use strict;
 use warnings;
 
 use NEXT;
+use Try::Tiny;
 
 use parent qw( Bio::Vega::Transform::Otter Bio::Otter::Log::WithContextMixin );
 
@@ -40,48 +41,57 @@ sub store {
 
     my $vega_dba = $self->vega_dba;
 
-    my $cs_a = $self->vega_dba->get_CoordSystemAdaptor;
-    foreach my $cs_type ( qw( Chr Clone Contig DnaContig ) ) {
-        my $get_set = "get_set_${cs_type}CoordSystem";
-        my $coord_system = $self->$get_set;
-        unless ($coord_system->is_stored($vega_dba)) {
-            $cs_a->store($coord_system);
+    try {
+        $vega_dba->begin_work;
+
+        my $cs_a = $self->vega_dba->get_CoordSystemAdaptor;
+        foreach my $cs_type ( qw( Chr Clone Contig DnaContig ) ) {
+            my $get_set = "get_set_${cs_type}CoordSystem";
+            my $coord_system = $self->$get_set;
+            unless ($coord_system->is_stored($vega_dba)) {
+                $cs_a->store($coord_system);
+            }
         }
-    }
 
-    # We need a new CoordSystemAdaptor to ensure the mapping cache is regenerated :-(
-    # Bio::EnsEMBL::Registry->clear;
+        # We need a new CoordSystemAdaptor to ensure the mapping cache is regenerated :-(
+        # Bio::EnsEMBL::Registry->clear;
 
-    my $slice = $self->get_ChromosomeSlice;
+        my $slice = $self->get_ChromosomeSlice;
 
-    # Take chromosome name from first CloneSequence
-    my @clone_seqs = $self->get_CloneSequences;
-    my $chromosome = $clone_seqs[0]->chromosome;
+        # Take chromosome name from first CloneSequence
+        my @clone_seqs = $self->get_CloneSequences;
+        my $chromosome = $clone_seqs[0]->chromosome;
 
-    my $db_slice = $self->slice_stored_if_needed($slice, $dna, $chromosome);
+        my $db_slice = $self->slice_stored_if_needed($slice, $dna, $chromosome);
 
-    my $reattach = ($db_slice != $slice);
+        my $reattach = ($db_slice != $slice);
 
-    foreach my $cs ( @clone_seqs ) {
-        $self->_store_clone_sequence($cs, $db_slice);
-    }
-
-    my $gene_a = $vega_dba->get_GeneAdaptor;
-    foreach my $gene ( @{$self->get_Genes} ) {
-        if ($reattach) {
-            $self->_reattach_gene($gene, $db_slice);
+        foreach my $cs ( @clone_seqs ) {
+            $self->_store_clone_sequence($cs, $db_slice);
         }
-        $gene_a->store($gene);
-    }
 
-    my $sf_a = $vega_dba->get_SimpleFeatureAdaptor;
-    foreach my $sf ( @{$self->get_SimpleFeatures} ) {
-        if ($reattach) {
-            $sf->slice($db_slice);
+        my $gene_a = $vega_dba->get_GeneAdaptor;
+        foreach my $gene ( @{$self->get_Genes} ) {
+            if ($reattach) {
+                $self->_reattach_gene($gene, $db_slice);
+            }
+            $gene_a->store($gene);
         }
-        $sf_a->store($sf);
-    }
 
+        my $sf_a = $vega_dba->get_SimpleFeatureAdaptor;
+        foreach my $sf ( @{$self->get_SimpleFeatures} ) {
+            if ($reattach) {
+                $sf->slice($db_slice);
+            }
+            $sf_a->store($sf);
+        }
+
+        $vega_dba->commit;
+    }
+    catch {
+        $vega_dba->rollback;
+        $self->logger->logconfess("store() failed: '$_'");
+    };
     return;
 }
 
