@@ -9,6 +9,8 @@ package Bio::Vega::Region::Store;
 use strict;
 use warnings;
 
+use Try::Tiny;
+
 use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::Slice;
 use Bio::Vega::Author;
@@ -45,42 +47,51 @@ sub store {
 
     my $vega_dba = $self->vega_dba;
 
-    # This is usually done by B:O:L:DB->load_dataset_info, but just in case,
-    # we do it here. The correct coord_system_factory will store the instantiated
-    # coord_systems in the database.
-    #
-    $self->coord_system_factory->instantiate_all;
+    try {
+        $vega_dba->begin_work;
 
-    my $slice = $region->slice;
+        # This is usually done by B:O:L:DB->load_dataset_info, but just in case,
+        # we do it here. The correct coord_system_factory will store the instantiated
+        # coord_systems in the database.
+        #
+        $self->coord_system_factory->instantiate_all;
 
-    # Take chromosome name from first CloneSequence
-    my @clone_seqs = $region->sorted_clone_sequences;
-    my $chromosome = $clone_seqs[0]->chromosome;
+        my $slice = $region->slice;
 
-    my $db_slice = $self->slice_stored_if_needed($slice, $dna, $chromosome);
+        # Take chromosome name from first CloneSequence
+        my @clone_seqs = $region->sorted_clone_sequences;
+        my $chromosome = $clone_seqs[0]->chromosome;
 
-    my $reattach = ($db_slice != $slice);
+        my $db_slice = $self->slice_stored_if_needed($slice, $dna, $chromosome);
 
-    foreach my $cs ( @clone_seqs ) {
-        $self->_store_clone_sequence($cs, $db_slice);
-    }
+        my $reattach = ($db_slice != $slice);
 
-    my $gene_a = $vega_dba->get_GeneAdaptor;
-    foreach my $gene ( $region->genes ) {
-        if ($reattach) {
-            $self->_reattach_gene($gene, $db_slice);
+        foreach my $cs ( @clone_seqs ) {
+            $self->_store_clone_sequence($cs, $db_slice);
         }
-        $gene_a->store($gene);
-    }
 
-    my $sf_a = $vega_dba->get_SimpleFeatureAdaptor;
-    foreach my $sf ( $region->seq_features ) {
-        if ($reattach) {
-            $sf->slice($db_slice);
+        my $gene_a = $vega_dba->get_GeneAdaptor;
+        foreach my $gene ( $region->genes ) {
+            if ($reattach) {
+                $self->_reattach_gene($gene, $db_slice);
+            }
+            $gene_a->store($gene);
         }
-        $sf_a->store($sf);
-    }
 
+        my $sf_a = $vega_dba->get_SimpleFeatureAdaptor;
+        foreach my $sf ( $region->seq_features ) {
+            if ($reattach) {
+                $sf->slice($db_slice);
+            }
+            $sf_a->store($sf);
+        }
+
+        $vega_dba->commit;
+    }
+    catch {
+        $vega_dba->rollback;
+        $self->logger->logconfess("store() failed: '$_'");
+    };
     return;
 }
 
