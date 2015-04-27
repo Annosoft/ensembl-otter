@@ -172,7 +172,6 @@ sub get_AnnotationBroker {
 
 sub begin_work {
   my ($self) = @_;
-  $self->dbc->db_handle->{AutoCommit}=0;
   $self->dbc->do('BEGIN');
   return;
 }
