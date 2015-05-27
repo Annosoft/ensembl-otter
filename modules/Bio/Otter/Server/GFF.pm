@@ -107,15 +107,15 @@ sub do_send_features {
             my $target_hash = $sequence_db ? { } : undef;
             my $features_gff = $self->_features_gff($features, $target_hash);
             my $gff = $self->gff_header . $features_gff;
-            if ($target_hash && keys %{$target_hash}) {
-                require Bio::Otter::Utils::AccessionInfo;
-                my @sequence_db = split /\s*,\s*/, $sequence_db;
-                my $mm = Bio::Otter::Utils::AccessionInfo->new('db_categories' => \@sequence_db);
-                my $accession_info = $mm->get_accession_info([keys %{$target_hash}]);
-                if (keys %{$accession_info}) {
-                    $gff .= ("##FASTA\n" . _fasta($accession_info));
-                }
-            }
+            # if ($target_hash && keys %{$target_hash}) {
+            #     require Bio::Otter::Utils::AccessionInfo;
+            #     my @sequence_db = split /\s*,\s*/, $sequence_db;
+            #     my $mm = Bio::Otter::Utils::AccessionInfo->new('db_categories' => \@sequence_db);
+            #     my $accession_info = $mm->get_accession_info([keys %{$target_hash}]);
+            #     if (keys %{$accession_info}) {
+            #         $gff .= ("##FASTA\n" . _fasta($accession_info));
+            #     }
+            # }
             return $gff;
         });
 
