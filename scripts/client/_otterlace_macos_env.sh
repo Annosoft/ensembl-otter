@@ -23,7 +23,11 @@ dot_otter=~/.otter
 dot_otter_etc="$dot_otter/etc"
 mkdir -p "$dot_otter_etc"
 
-dyld_path="${OTTER_SWAC}/lib"
+lib_path="${OTTER_SWAC}/lib"
+mysql_path="${lib_path}/mysql56/mysql"
+
+dyld_path="${lib_path}:${mysql_path}"
+unset mysql_path
 
 # Use the FALLBACK path.  Any dynamic libraries containing
 # file paths which are not found will look here.
@@ -33,7 +37,7 @@ export DYLD_FALLBACK_LIBRARY_PATH="$dyld_path"
 # its bitmap image format loaders
 export GDK_PIXBUF_MODULE_FILE="$dot_otter_etc/gdk-pixbuf.loaders"
 
-GDK_PIXBUF_MODULEDIR="${OTTER_SWAC}/lib/gdk-pixbuf-2.0/2.10.0/loaders" \
+GDK_PIXBUF_MODULEDIR="${lib_path}/gdk-pixbuf-2.0/2.10.0/loaders" \
 gdk-pixbuf-query-loaders > "$GDK_PIXBUF_MODULE_FILE"
 
 # Create config files for pango font handling library
@@ -47,7 +51,7 @@ ModuleFiles = $pango_module_file
 
 PANGO_RC
 
-find "${OTTER_SWAC}/lib/pango" -name '*.so' -print0 \
+find "${lib_path}/pango" -name '*.so' -print0 \
 | xargs -0 pango-querymodules > "$pango_module_file"
 
 # Need the X11 locale directory
@@ -57,6 +61,7 @@ unset bin_dir
 unset dot_otter
 unset dot_otter_etc
 unset dyld_path
+unset lib_path
 
 export OTTER_MACOS=1
 
