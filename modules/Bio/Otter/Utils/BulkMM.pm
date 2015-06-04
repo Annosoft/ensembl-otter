@@ -138,7 +138,15 @@ sub _get_connection {
 
         $ini_sth->execute($category) or die "Couldn't execute statement: " . $ini_sth->errstr;
 
-        my $db_details = $ini_sth->fetchrow_hashref or die "Failed to find available db for $category";
+        my $db_details = $ini_sth->fetchrow_hashref;
+        unless ($db_details) {
+            if ($category eq 'emblnew') {
+                return;
+            }
+            else {
+                die "Failed to find available db for $category";
+            }
+        }
 
         my $dsn = "DBI:mysql:".
             "database=".$db_details->{'database_name'}.
@@ -152,23 +160,18 @@ sub _get_connection {
 }
 
 sub dbh {
-    my ($self, $category, $dbh) = @_;
+    my ($self, $category) = @_;
 
     die "DB category required" unless $category;
 
     die "Invalid DB category: $category"
       unless grep { /^$category$/ } @ALL_DB_CATEGORIES;
 
-    if ($dbh) {
-        die "Not a valid DB handle: " . (ref $dbh) unless ref $dbh && $dbh->isa('DBI::db');
-        $self->{_dbhs}->{$category} = $dbh;
+    unless ($self->{'_dbh_cache'}{$category}) {
+        $self->{'_dbh_cache'}{$category} = $self->_get_connection($category);
     }
 
-    unless ($self->{_dbhs}->{$category}) {
-        $self->{_dbhs}->{$category} = $self->_get_connection($category);
-    }
-
-    return $self->{_dbhs}->{$category};
+    return $self->{'_dbh_cache'}{$category};
 }
 
 # We construct a matrix of queries: (plain, with-iso) x (exact, like)
@@ -237,21 +240,21 @@ sub __bulk_ph {
 sub _sth_for {
     my ($self, $db_name, $iso_key, $search_key) = @_;
 
-    my $dbh = $self->dbh($db_name);
+    my $dbh = $self->dbh($db_name) or return;
 
-    my $sth = $self->{_sth}->{$dbh}->{$iso_key}->{$search_key};
+    my $sth = $self->{_sth}{$dbh}{$iso_key}{$search_key};
     return $sth if $sth;
 
-    my $sql = $self->{_sql}->{$iso_key}->{$search_key};
+    my $sql = $self->{_sql}{$iso_key}{$search_key};
     $sth = $dbh->prepare($sql);
-    return $self->{_sth}->{$dbh}->{$iso_key}->{$search_key} = $sth;
+    return $self->{_sth}{$dbh}{$iso_key}{$search_key} = $sth;
 }
 
 sub _seq_sth_for {
     my ($self, $db_name) = @_;
 
-    my $dbh = $self->dbh($db_name);
-    my $sth = $self->{_seq_sth}->{$dbh};
+    my $dbh = $self->dbh($db_name) or return;
+    my $sth = $self->{_seq_sth}{$dbh};
     return $sth if $sth;
 
     my $PHs = __bulk_ph();
@@ -263,7 +266,7 @@ ORDER BY entry_id ASC, split_counter ASC
     };
 
     $sth = $dbh->prepare($sql);
-    return $self->{_seq_sth}->{$dbh} = $sth;
+    return $self->{_seq_sth}{$dbh} = $sth;
 }
 
 # How many can we fetch, hoping to stay inside the time budget?
@@ -336,7 +339,7 @@ sub _get_accessions {
           my @terms = sort { $a cmp $b } values %$terms;
 
           my ($iso_key, $search_key) = split /,/, $sth_type;
-          my $sth = $self->_sth_for($db_name, $iso_key, $search_key);
+          my $sth = $self->_sth_for($db_name, $iso_key, $search_key) or next;
 
           while (@terms) {
               my @chunk_of_terms = splice @terms, 0, $BULK;
