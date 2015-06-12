@@ -276,9 +276,10 @@ sub generate_Transcript {
       $tran_low  = $tran->coding_region_start;
       $tran_high = $tran->coding_region_end;
 
-      if (($strand == 1 and $tran_high == $tran->end) or ($strand == -1 and $tran_low == $tran->start)) {
-          # Check end_phase on end_Exon
-          my $end_Exon = $translation->end_Exon;
+      # Check end_phase on end_Exon
+      my $end_Exon = $translation->end_Exon;
+      if (   ($strand ==  1 and $tran_high == $end_Exon->end)
+          or ($strand == -1 and $tran_low  == $end_Exon->start)) {
           if ($end_Exon->end_phase == -1) {
               my $actual_end_phase = ($end_Exon->length + $end_Exon->phase) % 3;
               warn sprintf("%s %s: correcting bad end_phase, was -1, now %d\n",
