@@ -392,7 +392,7 @@ sub open_region_by_names {
 
 sub _open_region_selected {
     my ($self, $sn) = @_;
-    my $cc = $sn->open_SequenceSet($self->name);
+    my $cc = $sn->open_SequenceSet($self->path);
     $self->{cc} = $cc; # a MenuCanvasWindow::ColumnChooser
     return;
 }
