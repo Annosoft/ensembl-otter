@@ -30,9 +30,15 @@ my $by_start_end_strand = sub {
     my $result =
             $a->start            <=>  $b->start
         ||  $a->end              <=>  $b->end
-        ||  $a->strand           <=>  $b->strand
-        || ($a->stable_id // '') cmp ($b->stable_id // '');
-    return $result if $result;
+        ||  $a->strand           <=>  $b->strand;
+    if ($result) {
+        return $result;
+    }
+    elsif ($a->can('stable_id')) {
+        if ($result = ($a->stable_id // '') cmp ($b->stable_id // '')) {
+            return $result;
+        }
+    }
 
     if ($a->can('get_all_Attributes')) {
         return _feature_name($a) cmp _feature_name($b);
