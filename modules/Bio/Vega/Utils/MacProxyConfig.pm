@@ -42,12 +42,16 @@ sub mac_os_x_set_proxy_vars {
     }
 
     # Find the proxy config in the first active network service
+    my $active_device = active_network_device_name_hash();
     my $prox = {};
     my $first_network_service_name;
     foreach my $serv (@services) {
         # Skip inactive network services
         my $active = $serv->{'__INACTIVE__'} ? 0 : 1;
         next unless $active;
+
+        my $device_name = $serv->{'Interface'}{'DeviceName'};
+        next unless $active_device->{$device_name};
 
         $first_network_service_name = $serv->{'UserDefinedName'};
 
@@ -130,6 +134,24 @@ sub __setenv {
     }
 
     return;
+}
+
+sub active_network_device_name_hash {
+
+    my @if_com = qw{ ifconfig -u };
+    open(my $if_config, '-|', @if_com) or die "Can't open pipe from '@if_com'; $!";
+    my $dn;
+    my $active_hash = {};
+    while (<$if_config>) {
+        if (/^(\w+)/) {
+            $dn = $1;
+        }
+        elsif (/status: active/) {
+            $active_hash->{$dn} = 1;
+        }
+    }
+    close $if_config or die "Error running '@if_com'; exit $?";
+    return $active_hash;
 }
 
 1;

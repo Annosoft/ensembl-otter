@@ -37,6 +37,7 @@ use Bio::Otter::Lace::AceDatabase;
 use Bio::Otter::Lace::DB;
 use Bio::Otter::LogFile;
 use Bio::Otter::Auth::SSO;
+use Bio::Vega::Utils::MacProxyConfig qw{ mac_os_x_set_proxy_vars };
 
 use 5.009001; # for stacked -f -r which returns false under 5.8.8
 
@@ -507,6 +508,8 @@ sub get_UserAgent {
 
 sub _create_UserAgent {
     my ($self) = @_;
+
+    mac_os_x_set_proxy_vars(\%ENV) if $^O eq 'darwin';
 
     my $ua = LWP::UserAgent->new(timeout => 9000);
     $ua->env_proxy;
