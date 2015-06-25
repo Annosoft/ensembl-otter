@@ -661,8 +661,21 @@ $sqlite_fetch_query =~ s/[[:space:]]+/ /g; # collapse into one line for the blix
 sub blixem_config {
     my ($self) = @_;
 
-    my @pfetch_http_config = (
+    my @pfetch_common_config = (
         'separator'     => '" "',
+        );
+
+    my @pfetch_socket_config = (
+        @pfetch_common_config,
+        'fetch-mode'    => 'socket',
+        'errors'        => ['no match'],
+        'node'          => $PFETCH_SERVER_LIST->[0][0],
+        'port'          => $PFETCH_SERVER_LIST->[0][1],
+        'command'       => 'pfetch',
+        );
+
+    my @pfetch_http_config = (
+        @pfetch_common_config,
         'fetch-mode'    => 'http',
         'errors'        => ['no match', 'Not authorized'],
         'url'           => $self->Client->pfetch_url,
@@ -670,9 +683,11 @@ sub blixem_config {
         'port'          => 80,
         );
 
-    my $raw_fetch   = "pfetch-http-raw";
-    my $fasta_fetch = "pfetch-http-fasta";
-    my $embl_fetch  = "pfetch-http-embl";
+    my $connect = $ENV{'PFETCH_WWW'} ? 'http' : 'socket';
+    # my $connect = 'http';
+    my $raw_fetch   = "pfetch-$connect-raw";
+    my $fasta_fetch = "pfetch-$connect-fasta";
+    my $embl_fetch  = "pfetch-$connect-embl";
 
     my $config = {
 
@@ -741,6 +756,25 @@ sub blixem_config {
         },
 
         # Fetch methods
+
+        'pfetch-socket-embl'  => {
+            @pfetch_socket_config,
+            'args'      => '--client=%p_%h_%u -C -F %m',
+            'output'    => 'embl',
+        },
+
+        'pfetch-socket-fasta'   => {
+            @pfetch_socket_config,
+            'args'      => '--client=%p_%h_%u -C %m',
+            'output'    => 'fasta',
+        },
+
+        'pfetch-socket-raw'     => {
+            @pfetch_socket_config,
+            'args'      => '--client=%p_%h_%u -q -C %m',
+            'output'    => 'raw',
+        },
+
         'pfetch-http-embl'      => {
             @pfetch_http_config,
             'request'   => 'request=-F %m',
