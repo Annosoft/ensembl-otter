@@ -670,6 +670,10 @@ sub blixem_config {
         'port'          => 80,
         );
 
+    if (my $proxy = $ENV{'http_proxy'}) {
+        push @pfetch_http_config, 'proxy' => $proxy;
+    }
+
     my $raw_fetch   = "pfetch-http-raw";
     my $fasta_fetch = "pfetch-http-fasta";
     my $embl_fetch  = "pfetch-http-embl";
