@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # the installation script will append the proper values to these lines
 otterlace_installed=false
