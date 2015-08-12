@@ -23,8 +23,7 @@ sub client {
         $client->password_prompt($prompt_sub);
         $client->password_problem($passwarn_sub);
 
-        my $user = $client->author;
-        $self->prompt_string("Enter web password for '$user'");
+        $self->prompt_string( sub { my $user = $client->author; return "Enter web password for '$user'" } );
     }
 
     return $client;
@@ -43,10 +42,12 @@ sub initialise {
     my $top = $self->top;
     my $top_frame = $top->Frame(-borderwidth => $pad)->pack( -side => 'top' );
 
-    $top_frame->Label(
-        -text   => $self->prompt_string || 'Enter password',
-        -anchor => 's',
-        )->pack(-side => 'top');
+    $self->label_field(
+        $top_frame->Label(
+            -text   => $self->prompt_string || 'Enter password',
+            -anchor => 's',
+            )->pack(-side => 'top')
+        );
 
     # Space between label and entry frame
     $top_frame->Frame(
@@ -107,6 +108,8 @@ sub get_password {
         confess "Re-entrant password request, rejecting both";
     }
     local $self->{showing} = time();
+
+    $self->label_field->configure(-text => $self->prompt_string); # may have changed if editing config
 
     # Check to see if another window has grabbed input
     # (or the user won't be able to type their password
@@ -211,7 +214,14 @@ sub prompt_string {
     if ($prompt_string) {
         $self->{'_prompt_string'} = $prompt_string;
     }
-    return $self->{'_prompt_string'};
+
+    # prompt_string can be a sub-ref, in which case call it for the value
+    $prompt_string = $self->{'_prompt_string'};
+    if (ref($prompt_string)) {
+        $prompt_string = &$prompt_string();
+    }
+
+    return $prompt_string;
 }
 
 sub submit_button {
@@ -230,6 +240,15 @@ sub password_field {
         $self->{'_password_field'} = $password_field;
     }
     return $self->{'_password_field'};
+}
+
+sub label_field {
+    my ($self, $label_field) = @_;
+
+    if ($label_field) {
+        $self->{'_label_field'} = $label_field;
+    }
+    return $self->{'_label_field'};
 }
 
 
