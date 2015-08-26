@@ -53,7 +53,7 @@ sub _fetch_new_by_type {
 
     # Stable IDs are always 18 characters long
     my $rem = 18 - length($prefix);
-    return $type_prefix . sprintf "\%0${rem}d", $num;
+    return $prefix . sprintf "\%0${rem}d", $num;
 }
 
 1;
