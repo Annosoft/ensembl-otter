@@ -599,7 +599,7 @@ sub entered_seqs {
             } else {
                 $n = 1;
             }
-            $seq_tag = "${SEQ_TAG_STEM}$n";
+            $seq_tag = sprintf('%s%05d', $SEQ_TAG_STEM, $n);
             $self->logger->warn("creating new seq tag: $seq_tag");
             $string = ">$seq_tag\n" . $string;
         }
