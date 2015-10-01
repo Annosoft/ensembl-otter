@@ -47,6 +47,7 @@ my @method_biotype_status = qw{
         miRNA                       =                       -
         piRNA                       =                       -
         rRNA                        =                       -
+        scRNA                       =                       -
         siRNA                       =                       -
         snRNA                       =                       -
         snoRNA                      =                       -
