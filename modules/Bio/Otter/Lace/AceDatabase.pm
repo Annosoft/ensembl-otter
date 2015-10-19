@@ -599,7 +599,7 @@ sub _zmap_dna_config {
         $dna_slice_name => {
             sequence    => 'true',
             group       => 'always',
-            featuresets => 'DNA',
+            featuresets => [ 'DNA', '3 Frame Translation', 'Show Translation' ],
             stylesfile  => $self->stylesfile,
             url         => $dna_source->url($self),
         },
