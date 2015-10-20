@@ -405,8 +405,9 @@ sub store_SimpleFeature {
 sub remove_SimpleFeatures {
     my ($self, $type) = @_;
 
-    my $simple_features = $self->whole_slice->get_all_SimpleFeatures($type);
     my $sfa = $self->vega_dba->get_SimpleFeatureAdaptor;
+    $sfa->clear_cache;          # so that we get properly-DB-associated SF's from this:
+    my $simple_features = $self->whole_slice->get_all_SimpleFeatures($type);
 
     foreach my $sf (@$simple_features) {
         $sfa->remove($sf);
