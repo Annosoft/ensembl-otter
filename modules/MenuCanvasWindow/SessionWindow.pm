@@ -343,10 +343,10 @@ sub _compare_subseqs {
                 otter_id
                 translation_otter_id
                 strand
+                start_not_found
                 } ],
                 # author_name replaced on server
             booleans => [ qw{
-                start_not_found
                 utr_start_not_found
                 end_not_found
                 } ],
