@@ -834,7 +834,7 @@ sub make_database_directory {
 
     my $logger = $self->logger;
     my $home   = $self->home;
-    make_path($home, 0777) or $logger->logdie("Can't make_path('$home') : $!");
+    make_path($home, { mode => 0777 }) or $logger->logdie("Can't make_path('$home') : $!");
 
     return;
 }
