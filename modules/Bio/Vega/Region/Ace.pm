@@ -95,7 +95,7 @@ sub _process_contig_attribs {
         if ($value_override) {
             $value = $value_override;
         }
-        return unless $value;
+        next unless $value;
 
         my $method = $decoder->{'method'};
         $clone->$method($value);
