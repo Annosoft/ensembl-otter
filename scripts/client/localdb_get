@@ -15,6 +15,8 @@ sub do_it {
 
     $self->do_requires;
 
+    $self->set_extra_gff_args( pseudogene_fake_cds => 1 );
+
     my $features = $self->get_features;
     $self->send_feature_gff($features, 1); # 1 = process_gff
 

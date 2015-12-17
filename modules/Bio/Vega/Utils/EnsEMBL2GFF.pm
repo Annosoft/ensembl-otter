@@ -413,25 +413,37 @@ my $_new_feature_id_sub = sub {
             $feat->analysis(undef);
         }
 
-        if (my $tsl = $self->translation) {
+        my $pg_fake_cds = ($args{pseudogene_fake_cds} and ($self->biotype =~ /pseudo/i));
+
+        if (my $tsl = $self->translation or $pg_fake_cds) {
 
             # build up the CDS line - it's not really worth creating a
             # Translation->to_gff method, as most of the fields are
             # derived from the Transcript and Translation doesn't
             # inherit from Feature
 
-            my $start = $self->coding_region_start + $self->slice->start - 1;
-            my $end   = $self->coding_region_end   + $self->slice->start - 1;
+            my ($start, $end, $gff_phase, $stable);
 
-            my $ens_phase = $tsl->start_Exon->phase;
-            my $gff_phase =
-                defined $ens_phase ? $ens_phase_to_gff_phase{$ens_phase} : 0;
+            if ($pg_fake_cds) {
+                $start     = $self->seq_region_start;
+                $end       = $self->seq_region_end;
+                $gff_phase = 0;
+            } else {
+                $start = $self->coding_region_start + $self->slice->start - 1;
+                $end   = $self->coding_region_end   + $self->slice->start - 1;
+
+                my $ens_phase = $tsl->start_Exon->phase;
+                $gff_phase =
+                    defined $ens_phase ? $ens_phase_to_gff_phase{$ens_phase} : 0;
+
+                $stable = $tsl->stable_id;
+            }
 
             my $attrib_hash = {
                 Name  => $name,
                 Parent => $id,
             };
-            if (my $stable = $tsl->stable_id) {
+            if ($stable) {
                 $attrib_hash->{'stable_id'} = $stable;
             }
             my $gff_format = $args{'gff_format'};

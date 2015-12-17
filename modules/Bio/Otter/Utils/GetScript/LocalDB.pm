@@ -102,40 +102,51 @@ sub augment_feature_info {
     return $features;
 }
 
-sub send_feature_gff {
-    my ($self, $features, $process_gff, $gff_trailer_ref) = @_;
+{
+    my $extra_gff_args = {};
 
-    # # Example of passing extra gff args:
-    # #
-    # $self->_sfg->extra_gff_args({
-    #     use_cigar_exonerate => 1, # TEMP for testing
-    #                             });
+    sub set_extra_gff_args {
+        my ($self, %args) = @_;
+        $extra_gff_args = { %args };
+        return;
+    }
 
-    $self->_sfg->extra_gff_args({
-        use_name_attributes => 1,
-        transcript_analyses => $self->arg('transcript_analyses'),
-                                });
+    sub send_feature_gff {
+        my ($self, $features, $process_gff, $gff_trailer_ref) = @_;
 
-    my $gff;
-    $self->time_diff_for('write GFF', sub { return $gff = $self->_sfg->gff_for_features($features) } );
+        # # Example of passing extra gff args:
+        # #
+        # $self->_sfg->extra_gff_args({
+        #     use_cigar_exonerate => 1, # TEMP for testing
+        #                             });
 
-    # update the SQLite db
-    $self->update_local_db($self->arg('gff_source'), '-no-gff-cache-file-for-localdb-', $process_gff);
+        $self->_sfg->extra_gff_args({
+            use_name_attributes => 1,
+            transcript_analyses => $self->arg('transcript_analyses'),
+            %$extra_gff_args,
+                                    });
 
-    # Send data to zmap on STDOUT
-    $self->time_diff_for(
-        'sending data', sub {
-            print STDOUT $gff;
-            print STDOUT $$gff_trailer_ref if $gff_trailer_ref;
-        } );
+        my $gff;
+        $self->time_diff_for('write GFF', sub { return $gff = $self->_sfg->gff_for_features($features) } );
 
-    # zmap waits for STDOUT to be closed as an indication that all
-    # data has been sent, so we close the handle now so that zmap
-    # doesn't tell otter about the successful loading of the column
-    # before we have the SQLite db updated and the cache file saved.
-    close STDOUT or die "Error writing to STDOUT; $!";
+        # update the SQLite db
+        $self->update_local_db($self->arg('gff_source'), '-no-gff-cache-file-for-localdb-', $process_gff);
 
-    return;
+        # Send data to zmap on STDOUT
+        $self->time_diff_for(
+            'sending data', sub {
+                print STDOUT $gff;
+                print STDOUT $$gff_trailer_ref if $gff_trailer_ref;
+            } );
+
+        # zmap waits for STDOUT to be closed as an indication that all
+        # data has been sent, so we close the handle now so that zmap
+        # doesn't tell otter about the successful loading of the column
+        # before we have the SQLite db updated and the cache file saved.
+        close STDOUT or die "Error writing to STDOUT; $!";
+
+        return;
+    }
 }
 
 # Primarily for the benefit of tests
