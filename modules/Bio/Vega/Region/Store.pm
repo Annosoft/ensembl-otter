@@ -90,6 +90,7 @@ sub store {
     }
     catch {
         $vega_dba->rollback;
+        $vega_dba->clear_caches;
         $self->logger->logconfess("store() failed: '$_'");
     };
     return;

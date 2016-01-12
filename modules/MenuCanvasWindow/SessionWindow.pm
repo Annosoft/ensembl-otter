@@ -597,6 +597,7 @@ sub do_rename_locus {
         catch {
             my $err = $_;
             $vega_dba->rollback;
+            $vega_dba->clear_caches;
             die "Saving to SQLite: $err";
         };
 
@@ -2437,6 +2438,7 @@ sub _save_simplefeatures {
     catch {
         my $err = $_;
         $vega_dba->rollback;
+        $vega_dba->clear_caches;
 
         die "_save_simplefeatures: $err";
     };
@@ -2580,6 +2582,7 @@ sub _replace_SubSeq_sqlite {
         $err = $_;
         $self->logger->error("_replace_SubSeq_sqlite: $err");
         $vega_dba->rollback;
+        $vega_dba->clear_caches;
     };
 
     if ($done_sqlite) {
