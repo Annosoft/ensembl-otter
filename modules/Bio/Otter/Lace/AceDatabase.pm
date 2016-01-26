@@ -744,7 +744,10 @@ sub blixem_config {
 sub _curl_config {
     my ($self) = @_;
 
-    my %config = ();
+    my %config = (
+        'ipresolve'  => 'ipv4',
+        'curl-debug' => 'true',
+        );
 
     if ($^O eq 'darwin') {
         if (my $swac = $ENV{'OTTER_SWAC'}) {
