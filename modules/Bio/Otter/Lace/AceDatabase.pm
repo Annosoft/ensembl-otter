@@ -554,6 +554,7 @@ sub _zmap_config {
             'xremote-debug'   => $xremote_debug ? 'true' : 'false',
             'stylesfile'      => $self->stylesfile,
             ($self->colour ? ('session-colour'  => $self->colour) : ()),
+            $self->_curl_config,
             %{$self->slice->zmap_config_stanza},
         },
 
@@ -648,6 +649,7 @@ sub blixem_config {
             # ZMap stylesfile is used to pick up colours for transcripts
             'stylesfile'            => $self->stylesfile,
             ($self->colour ? ('session-colour'  => $self->colour) : ()),
+            $self->_curl_config,
         },
 
 
@@ -737,6 +739,21 @@ sub blixem_config {
     _config_merge($config, $self->DataSet->blixem_config);
 
     return $config;
+}
+
+sub _curl_config {
+    my ($self) = @_;
+
+    my %config = ();
+
+    if ($^O eq 'darwin') {
+        if (my $swac = $ENV{'OTTER_SWAC'}) {
+            my $cainfo = "${swac}/share/curl/curl-ca-bundle.crt";
+            $config{'cainfo'} = $cainfo;
+        }
+    }
+
+    return %config;
 }
 
 sub _config_merge {
