@@ -18,13 +18,12 @@ All cells in the entry.accession columns match
 
 # NB: databases will be searched in the order in which they appear in this list
 
-Readonly my @ALL_DB_CATEGORIES => qw(
+Readonly my @SEQ_DB_CATEGORIES => qw(
     emblnew
     emblrelease
     uniprot
     uniprot_archive
     refseq
-    mushroom
 );
 
 Readonly my $UNIPARC => 'uniprot_archive';
@@ -64,6 +63,9 @@ sub new {
     my ($class, @args) = @_;
 
     my %options = ( %DEFAULT_OPTIONS, @args );
+    if (delete $options{'search_all_dbs'}) {
+        $options{'db_categories'} = [ @SEQ_DB_CATEGORIES ];
+    }
     $options{t_budget} ||= 604800; # default = 1 week, in seconds
 
     my $self = bless \%options, $class;
@@ -163,9 +165,6 @@ sub dbh {
     my ($self, $category) = @_;
 
     die "DB category required" unless $category;
-
-    die "Invalid DB category: $category"
-      unless grep { /^$category$/ } @ALL_DB_CATEGORIES;
 
     unless ($self->{'_dbh_cache'}{$category}) {
         $self->{'_dbh_cache'}{$category} = $self->_get_connection($category);
@@ -283,22 +282,20 @@ sub _chunk_size {
 }
 
 sub get_accession_types {
-    my ($self, $accs, @opt) = @_;
+    my ($self, $accs) = @_;
     return $self->_get_accessions(
         acc_list      => $accs,
         db_categories => [ @DEFAULT_DB_CATEGORIES ],
         sv_search     => 1,
-        @opt,
         );
 }
 
 sub get_accession_info {
-    my ($self, $accs, @opt) = @_;
+    my ($self, $accs) = @_;
     return $self->_get_accessions_managed(
         acc_list      => $accs,
         db_categories => $self->db_categories,
         sv_search     => 1,
-        @opt,
         );
 }
 
@@ -324,7 +321,7 @@ sub _get_accessions {
 
     my %acc_hash = map { $_ => 1 } @{$opts{acc_list}};
     my $results = $opts{existing_results} || {};
-    my $fetch_sequence = $opts{'no_sequence'} ? 0 : 1;
+    my $fetch_sequence = $self->fetch_sequence;
 
   DB: for my $db_name (@{$opts{db_categories}}) {
 
@@ -620,6 +617,12 @@ sub debug {
     my ($self, $debug) = @_;
     $self->{debug} = $debug if $debug;
     return $self->{debug};
+}
+
+sub fetch_sequence {
+    my ($self) = @_;
+
+    return $self->{'no_sequence'} ? 0 : 1;
 }
 
 1;

@@ -11,7 +11,7 @@ use POSIX ();
 use Try::Tiny;
 
 use Hum::FastaFileIO;
-use Hum::Pfetch;
+use Bio::Otter::Utils::AccessionInfo;
 
 sub new {
     my( $pkg ) = @_;
@@ -124,12 +124,20 @@ sub fork_dotter {
         # change them to "n"s.
         $self->change_dashes_to_n($query_seq);
 
-        # Write the subject with pfetch
-        my ($subject_seq) = Hum::Pfetch::get_Sequences($subject_name);
-        die "Can't fetch '$subject_name'\n" unless $subject_seq;
-        my $subject_out = Hum::FastaFileIO->new("> $subject_file");
-        $subject_out->write_sequences($subject_seq);
-        $subject_out = undef;
+        my $fetcher = Bio::Otter::Utils::AccessionInfo->new(search_all_dbs => 1);
+        my $info = $fetcher->get_accession_info( [$subject_name] );
+        if (my $data = $info->{$subject_name}) {
+            # Write the subject
+            my $subject_seq = Hum::Sequence->new();
+            $subject_seq->name($subject_name);
+            $subject_seq->description($info->{'description'});
+            $subject_seq->sequence_string($info->{'sequence'});
+            my $subject_out = Hum::FastaFileIO->new("> $subject_file");
+            $subject_out->write_sequences($subject_seq);
+        }
+        else {
+            die "Can't fetch '$subject_name'\n";
+        }
 
         # Write out the query sequence
         my $query_out = Hum::FastaFileIO->new("> $query_file");

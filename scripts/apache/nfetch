@@ -50,19 +50,13 @@ use Bio::Otter::Utils::AccessionInfo;
             }
         }
 
-        my @opt;
+        my @opt = (search_all_dbs => 1);
         if ($switches{'-F'}) {
-            push @opt, 'no_sequence', 1;
+            push @opt, no_sequence => 1;
         }
 
-        my $fetcher = Bio::Otter::Utils::AccessionInfo->new;
-        
-        # Add refseq to the default list
-        my @db_ctgrs = @{ $fetcher->db_categories };
-        push(@db_ctgrs, 'refseq');
-        $fetcher->db_categories(\@db_ctgrs);
-        
-        $info = $fetcher->get_accession_info($args, @opt);
+        my $fetcher = Bio::Otter::Utils::AccessionInfo->new(@opt);
+        $info = $fetcher->get_accession_info($args);
         
         if ($switches{'-F'}) {
             $reply_content = ebi_web_fetch_full_entry($args, $info);
