@@ -50,16 +50,14 @@ use Bio::Otter::Utils::AccessionInfo;
             }
         }
 
-        my @opt = (search_all_dbs => 1);
+        my $fetcher = Bio::Otter::Utils::AccessionInfo->new;
+        my ($info);
         if ($switches{'-F'}) {
-            push @opt, no_sequence => 1;
-        }
-
-        my $fetcher = Bio::Otter::Utils::AccessionInfo->new(@opt);
-        $info = $fetcher->get_accession_info($args);
-        
-        if ($switches{'-F'}) {
+            $info = $fetcher->get_accession_info_no_sequence($args);
             $reply_content = ebi_web_fetch_full_entry($args, $info);
+        }
+        else {
+            $info = $fetcher->get_accession_info($args);
         }
     };
 

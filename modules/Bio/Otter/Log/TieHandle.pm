@@ -63,9 +63,10 @@ sub untie_for {
     # first.  Do it this way so caller is not holding a ref
     my $self = tied($tied_fh);
 
-    my $fh = $self->{orig};
-    undef $self;
-    untie *$fh;
+    if (my $fh = $self->{orig}) {
+        undef $self;
+        untie *$fh;
+    }
 
     return;
 }

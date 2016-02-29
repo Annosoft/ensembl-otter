@@ -481,13 +481,11 @@ sub launch_exonerate {
     my $maxintron = $self->get_entry('max_intron_length') || 0;
 
     my $top = $self->top;
-    my $atc = $SessionWindow->AceDatabase->AccessionTypeCache;
-    my $latest_acc_sv_sub = sub { return $atc->latest_acc_sv_for_stem(@_) };
 
     $self->progress('Building OTF session');
     my $otf = Bio::Otter::Lace::OnTheFly::Genomic->new(
 
-        seqs       => $self->entered_seqs($latest_acc_sv_sub),
+        seqs       => $self->entered_seqs,
         accessions => $self->entered_accessions,
 
         full_seq        => $SessionWindow->Assembly->Sequence,
@@ -505,7 +503,7 @@ sub launch_exonerate {
         long_query_cb     => sub { $self->long_query_confirm($top, @_)  },
         progress_cb       => sub { $self->progress(@_) },
 
-        accession_type_cache => $atc,
+        accession_type_cache => $self->SessionWindow->AceDatabase->AccessionTypeCache,
 
         logic_names          => $SessionWindow->OTF_Genomic_columns,
         );
@@ -585,24 +583,24 @@ Readonly my $SEQ_TAG_STEM => 'OTF_seq_';
 # get seqs from fasta file and text box
 #
 sub entered_seqs {
-    my ($self, $latest_acc_sv_sub) = @_;
-    my @seqs;
+    my ($self) = @_;
 
+    my @seqs;
     if (my $string = $self->fasta_txt->get('1.0', 'end')) {
+        $string = $self->_tidy_pasted_sequence($string);
         if ($string =~ /\S/ and $string !~ />/) {
-            my $seq_tag = &$latest_acc_sv_sub($SEQ_TAG_STEM);
-            my $n;
-            if ($seq_tag) {
-                ($n) = $seq_tag =~ /${SEQ_TAG_STEM}(\d+)$/;
-                ++$n;
-            } else {
-                $n = 1;
-            }
-            $seq_tag = sprintf('%s%05d', $SEQ_TAG_STEM, $n);
+            my $atc = $self->SessionWindow->AceDatabase->AccessionTypeCache;
+            my $seq_tag;
+            my $i = 0;
+            do {
+                $i++;
+                $seq_tag = sprintf('%s%05d', $SEQ_TAG_STEM, $i);
+            } while ($atc->acc_sv_exists($seq_tag));
+            ### Delay between generating new name here and save_accession_info()
+            ### being called in Bio::Otter::Lace::OnTheFly::QueryValidator
             $self->logger->warn("creating new seq tag: $seq_tag");
             $string = ">$seq_tag\n" . $string;
         }
-        $string = $self->_tidy_pasted_sequence($string);
         push @seqs, Hum::FastaFileIO->new(\$string)->read_all_sequences;
     }
     if (my $file_name = $self->get_entry('fasta_file')) {

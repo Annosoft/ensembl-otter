@@ -7,9 +7,18 @@ use strict;
 use warnings;
 use Try::Tiny;
 use Hum::ClipboardUtils qw{ accessions_from_text };
+use Hum::Sort qw{ ace_sort };
 use Carp qw( cluck );
 
-my (%client, %DB);
+my (
+    %client,
+    %DB,
+    %acc_sv_exists_sth,
+    %save_acc_info_sth,
+    %latest_acc_sv_sth,
+    %save_tax_info_sth,
+    %full_acc_sv_sth,
+);
 
 sub DESTROY {
     my ($self) = @_;
@@ -18,6 +27,11 @@ sub DESTROY {
 
     delete $client{$self};
     delete $DB{$self};
+    delete $acc_sv_exists_sth{$self};
+    delete $save_acc_info_sth{$self};
+    delete $latest_acc_sv_sth{$self};
+    delete $save_acc_info_sth{$self};
+    delete $full_acc_sv_sth{$self};
 
     return;
 }
@@ -77,7 +91,7 @@ sub populate {
     return unless @to_fetch;
 
     # Query the webserver (mole database) for the information.
-    my $results = $self->Client->get_accession_types(@to_fetch);
+    my $results = $self->Client->get_accession_info(@to_fetch);
 
     my $save_alias = $dbh->prepare(q{
         INSERT INTO otter_full_accession(name, accession_sv) VALUES (?,?)
@@ -121,8 +135,6 @@ sub populate {
 }
 
 {
-    my %save_acc_info_sth;
-
     my $save_acc_info_sql = q{
         INSERT OR REPLACE INTO otter_accession_info (
               accession_sv
@@ -178,8 +190,6 @@ sub populate_taxonomy {
 }
 
 {
-    my %save_tax_info_sth;
-
     my $save_tax_info_sql = q{
         INSERT OR REPLACE INTO otter_species_info (
                 taxon_id
@@ -295,11 +305,10 @@ sub evidence_type_and_name_from_accession_list {
 {
     my @fai_cols = qw( taxon_id evi_type description source currency length sequence );
     my $cols_spec = join(', ', map { "oai.$_" } @fai_cols);
-    # should this be a LEFT JOIN??
     my $feature_accession_info_sql = qq{
         SELECT $cols_spec, osi.scientific_name, osi.common_name
         FROM otter_accession_info oai
-        INNER JOIN otter_species_info osi
+        LEFT JOIN otter_species_info osi
         USING ( taxon_id )
         WHERE oai.accession_sv = ?
     };
@@ -315,10 +324,8 @@ sub evidence_type_and_name_from_accession_list {
 }
 
 {
-    my %latest_acc_sv_sth;
-
     my $latest_acc_sv_sql = q{
-        SELECT MAX(accession_sv) FROM otter_accession_info WHERE accession_sv LIKE ?
+        SELECT accession_sv FROM otter_accession_info WHERE accession_sv LIKE ?
     };
 
     sub latest_acc_sv_for_stem {
@@ -326,13 +333,41 @@ sub evidence_type_and_name_from_accession_list {
 
         my $sth = $latest_acc_sv_sth{$self} ||= $DB{$self}->dbh->prepare($latest_acc_sv_sql);
 
-        my $pattern = "${stem}%";
-        $sth->execute($pattern);
-        my ($result) = $sth->fetchrow;
-
-        $sth->finish;
-        return $result;
+        $sth->execute("$stem.%");
+        my @all_acc_sv;
+        while (my ($acc_sv) = $sth->fetchrow) {
+            push(@all_acc_sv, $acc_sv);
+        }
+        if (@all_acc_sv) {
+            my ($first) = sort { ace_sort($b, $a) } @all_acc_sv;
+            return $first;
+        }
+        else {
+            return;
+        }
     }
+}
+
+sub acc_sv_exists {
+    my ($self, $acc_sv) = @_;
+
+    my $sth = $acc_sv_exists_sth{$self} ||= $DB{$self}->dbh->prepare(
+        "SELECT count(*) FROM otter_accession_info WHERE accession_sv = ?"
+        );
+    $sth->execute($acc_sv);
+    my ($count) = $sth->fetchrow;
+    return $count ? 1 : 0;
+}
+
+sub full_acc_sv {
+    my ($self, $name) = @_;
+
+    my $sth = $full_acc_sv_sth{$self} ||= $DB{$self}->dbh->prepare(
+        "SELECT accession_sv FROM otter_full_accession WHERE name = ?"
+        );
+    $sth->execute($name);
+    my ($acc_sv) = $sth->fetchrow;
+    return $acc_sv;
 }
 
 sub begin_work { my ($self) = @_; return $DB{$self}->dbh->begin_work; }

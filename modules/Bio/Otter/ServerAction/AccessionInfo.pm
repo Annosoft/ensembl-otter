@@ -21,8 +21,23 @@ Bio::Otter::ServerAction::AccessionInfo - serve requests for accession info.
 
 ### Methods
 
-=head2 get_accession_types
-=cut
+sub get_accession_info {
+    my $self = shift;
+
+    my $acc_list = $self->deserialise_id_list($self->server->require_argument('accessions'));
+
+    my( $info );
+    try {
+        my $ai = Bio::Otter::Utils::AccessionInfo->new;
+        $info = $ai->get_accession_info($acc_list);
+        1;
+    }
+    catch {
+        die "Failed to fetch AccessionInfo accession type info: $_";
+    };
+
+    return $info;
+}
 
 sub get_accession_types {
     my $self = shift;
@@ -41,7 +56,7 @@ sub get_accession_types {
     my $ai_types;
     try {
         my $ai = Bio::Otter::Utils::AccessionInfo->new;
-        $ai_types = $ai->get_accession_types(\@ai_acc_list);
+        $ai_types = $ai->get_accession_info_no_sequence(\@ai_acc_list);
         1;
     }
     catch {

@@ -2982,6 +2982,7 @@ sub launch_dotter {
     return unless $cdna;
 
     my $dotter = Bio::Otter::Utils::DotterLauncher->new;
+    $dotter->AccessionTypeCache($self->SessionWindow->AceDatabase->AccessionTypeCache);
 
     my $top = $self->canvas->toplevel;
     $dotter->problem_report_cb( sub { $top->Tk::Utils::Dotter::problem_box(@_) } );

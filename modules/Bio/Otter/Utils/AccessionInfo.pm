@@ -34,7 +34,7 @@ sub new {
 }
 
 sub _init {
-    foreach my $method (qw( get_accession_info get_accession_types get_taxonomy_info db_categories debug )) {
+    foreach my $method (qw( get_accession_info get_accession_info_no_sequence get_taxonomy_info db_categories debug )) {
         my $code = sub {
             my ($self, @args) = @_;
             # all calls are scalar

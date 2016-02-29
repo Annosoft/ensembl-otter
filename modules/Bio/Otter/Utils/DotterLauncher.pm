@@ -11,12 +11,20 @@ use POSIX ();
 use Try::Tiny;
 
 use Hum::FastaFileIO;
-use Bio::Otter::Utils::AccessionInfo;
 
 sub new {
     my( $pkg ) = @_;
 
     return bless {}, $pkg;
+}
+
+sub AccessionTypeCache {
+    my ($self, $AccessionTypeCache) = @_;
+
+    if ($AccessionTypeCache) {
+        $self->{'_AccessionTypeCache'} = $AccessionTypeCache;
+    }
+    return $self->{'_AccessionTypeCache'};
 }
 
 sub query_start {
@@ -124,12 +132,24 @@ sub fork_dotter {
         # change them to "n"s.
         $self->change_dashes_to_n($query_seq);
 
-        my $fetcher = Bio::Otter::Utils::AccessionInfo->new(search_all_dbs => 1);
-        my $info = $fetcher->get_accession_info( [$subject_name] );
-        if (my $data = $info->{$subject_name}) {
+        my $atc = $self->AccessionTypeCache;
+        my $acc_list = $atc->accession_list_from_text($subject_name);   # Strips "Em:" etc... prefixes
+        my ($actual_name);
+        if (@$acc_list) {
+            $atc->populate($acc_list);
+            $actual_name = $acc_list->[0];
+        }
+        else {
+            # Name didn't match accession regular expression
+            # Could be, for example, a RefSeq accession.
+            $atc->populate([$subject_name]);
+            $actual_name = $subject_name;
+        }
+        $actual_name = $atc->full_acc_sv($actual_name) || $actual_name;
+        if (my $info = $atc->feature_accession_info($actual_name)) {
             # Write the subject
             my $subject_seq = Hum::Sequence->new();
-            $subject_seq->name($subject_name);
+            $subject_seq->name($actual_name);  # Show the fully resolved name
             $subject_seq->description($info->{'description'});
             $subject_seq->sequence_string($info->{'sequence'});
             my $subject_out = Hum::FastaFileIO->new("> $subject_file");

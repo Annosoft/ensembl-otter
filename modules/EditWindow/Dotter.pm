@@ -18,6 +18,7 @@ sub initialise {
     my $top = $self->top;
 
     my $dotter = Bio::Otter::Utils::DotterLauncher->new;
+    $dotter->AccessionTypeCache($self->SessionWindow->AceDatabase->AccessionTypeCache);
     $dotter->problem_report_cb( sub { $top->Tk::Utils::Dotter::problem_box(@_) } );
     $self->dotter($dotter);
 

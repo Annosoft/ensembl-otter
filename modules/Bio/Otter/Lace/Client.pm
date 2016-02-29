@@ -1463,6 +1463,18 @@ sub get_methods_ace {
     return $self->_get_cache_config_file('methods_ace');
 }
 
+sub get_accession_info {
+    my ($self, @accessions) = @_;
+
+    my $hashref = $self->otter_response_content(
+        'POST',
+        'get_accession_info',
+        {accessions => join ',', @accessions},
+        );
+
+    return $hashref;
+}
+
 sub get_accession_types {
     my ($self, @accessions) = @_;
 

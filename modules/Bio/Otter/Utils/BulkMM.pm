@@ -28,13 +28,6 @@ Readonly my @SEQ_DB_CATEGORIES => qw(
 
 Readonly my $UNIPARC => 'uniprot_archive';
 
-Readonly my @DEFAULT_DB_CATEGORIES => qw(
-    emblnew
-    emblrelease
-    uniprot
-    uniprot_archive
-);
-
 Readonly my %DB_NAME_TO_SOURCE => (
     emblnew     => 'EMBL',
     emblrelease => 'EMBL',
@@ -52,7 +45,7 @@ Readonly my %DEFAULT_OPTIONS => (
     port => 3306,
     user => 'genero',
     name => 'mm_ini',
-    db_categories => [ @DEFAULT_DB_CATEGORIES ],
+    db_categories => [ @SEQ_DB_CATEGORIES ],
     );
 
 my $BULK = 1000; # how many placeholders in SQL == max fetch chunk size
@@ -63,9 +56,6 @@ sub new {
     my ($class, @args) = @_;
 
     my %options = ( %DEFAULT_OPTIONS, @args );
-    if (delete $options{'search_all_dbs'}) {
-        $options{'db_categories'} = [ @SEQ_DB_CATEGORIES ];
-    }
     $options{t_budget} ||= 604800; # default = 1 week, in seconds
 
     my $self = bless \%options, $class;
@@ -268,60 +258,33 @@ ORDER BY entry_id ASC, split_counter ASC
     return $self->{_seq_sth}{$dbh} = $sth;
 }
 
-# How many can we fetch, hoping to stay inside the time budget?
-sub _chunk_size {
-    my ($self, $n_fetched) = @_;
-    my $t_used = $self->t_used;
-    my $t_ea_avg = $n_fetched ? ($t_used / $n_fetched) : $SLOW_FETCH;
-    my $t_left = $self->t_budget - $t_used;
-    $t_left -= 2 * $SLOW_FETCH; # avoid overrun due to a couple of slow
-    my $max = int($t_left / $t_ea_avg);
-    $max = $BULK if $max > $BULK;
-    $max = 0 if $max < 0;
-    return $max;
-}
-
-sub get_accession_types {
-    my ($self, $accs) = @_;
-    return $self->_get_accessions(
-        acc_list      => $accs,
-        db_categories => [ @DEFAULT_DB_CATEGORIES ],
-        sv_search     => 1,
-        );
-}
-
 sub get_accession_info {
     my ($self, $accs) = @_;
-    return $self->_get_accessions_managed(
-        acc_list      => $accs,
-        db_categories => $self->db_categories,
-        sv_search     => 1,
+
+    return $self->_get_accessions(
+        acc_list        => $accs,
+        db_categories   => $self->db_categories,
+        sv_search       => 1,
+        fetch_sequence  => 1,
         );
 }
 
-sub _get_accessions_managed {
-    my ($self, %opts) = @_;
-    my $results = $opts{existing_results} = {};
-    my @want = @{ delete $opts{acc_list} };
+sub get_accession_info_no_sequence {
+    my ($self, $accs) = @_;
 
-    my $n_wanted = @want;
-    while (@want) {
-        my $already_asked = $n_wanted - @want;
-        my @ask = splice @want, 0, $self->_chunk_size($already_asked);
-        last if !@ask; # out of time
-        $self->_get_accessions(%opts, acc_list => \@ask);
-    }
-
-    return $results;
+    return $self->_get_accessions(
+        acc_list        => $accs,
+        db_categories   => $self->db_categories,
+        sv_search       => 1,
+        );
 }
-
 
 sub _get_accessions {
     my ($self, %opts) = @_;
 
     my %acc_hash = map { $_ => 1 } @{$opts{acc_list}};
-    my $results = $opts{existing_results} || {};
-    my $fetch_sequence = $self->fetch_sequence;
+    my $fetch_sequence = $opts{fetch_sequence};
+    my $results = {};
 
   DB: for my $db_name (@{$opts{db_categories}}) {
 

@@ -157,16 +157,16 @@ sub acc_type_tt {
     my (@fetch, @time);
     for (my $i=0; $i<@ai; $i++) {
         ($time[$i], $fetch[$i]) = walltime
-          { $ai[$i]->get_accession_types($acc_list) };
+          { $ai[$i]->get_accession_info_no_sequence($acc_list) };
 
         local $TODO = 'times are awry';
         my $t_ea = $time[$i] / $N;
         cmp_ok($t_ea, '<', $T_BUDGET,
-               sprintf('get_accession_types: time[ %s ] = %.1fs/%s = %.4fs/ea = %.2fx',
+               sprintf('get_accession_info_no_sequence: time[ %s ] = %.1fs/%s = %.4fs/ea = %.2fx',
                        ref($ai[$i]), $time[$i],$N, $t_ea, $t_ea/$T_BUDGET));
     }
     is_deeply($fetch[0], $fetch[1],
-              "get_accession_types: fetch[ $ai[0] ] == fetch[ $ai[1] ]")
+              "get_accession_info_no_sequence: fetch[ $ai[0] ] == fetch[ $ai[1] ]")
        or diag explain \@fetch; # may be large
 
     return 0;
