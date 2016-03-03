@@ -713,19 +713,19 @@ sub blixem_config {
         # Fetch methods
         'pfetch-http-embl'      => {
             @pfetch_http_config,
-            'request'   => 'request=-F %m',
+            'request'   => '-F %m',
             'output'     => 'embl',
         },
 
         'pfetch-http-fasta'     => {
             @pfetch_http_config,
-            'request'   => 'request=%m',
+            'request'   => '%m',
             'output'    => 'fasta',
         },
 
         'pfetch-http-raw'     => {
             @pfetch_http_config,
-            'request'   => 'request=-q %m',
+            'request'   => '-q %m',
             'output'    => 'raw',
         },
 
