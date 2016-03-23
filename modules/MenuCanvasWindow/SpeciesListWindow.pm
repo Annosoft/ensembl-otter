@@ -8,8 +8,11 @@ use warnings;
 
 use Carp;
 use Bio::Otter::Log::Log4perl 'logger';
+use Fcntl 'O_RDONLY';
+use Tie::File;
 use Try::Tiny;
 use Tk::DialogBox;
+use Tk::FileSelect;
 
 use Zircon::ZMap;
 
@@ -62,6 +65,10 @@ sub new {
     $top->Tk::bind('<Control-s>', $shortcut_command);
     $top->Tk::bind('<Control-S>', $shortcut_command);
 
+    my $shortcut_file_command = sub { $self->show_shortcut_file_window; };
+    $top->Tk::bind('<Control-f>', $shortcut_file_command);
+    $top->Tk::bind('<Control-F>', $shortcut_file_command);
+
     my $recover_command = sub{ $self->recover_some_sessions('explicit'); };
     $top->Tk::bind('<Control-r>',    $recover_command);
     $top->Tk::bind('<Control-R>',    $recover_command);
@@ -91,6 +98,13 @@ sub new {
          -accelerator => 'Ctrl+S',
          -underline   => 1,
          -command     => $shortcut_command);
+
+    $file_menu->add
+        ('command',
+         -label       => 'Shortcut file',
+         -accelerator => 'Ctrl+F',
+         -underline   => 1,
+         -command     => $shortcut_file_command);
 
     $file_menu->add
        ('command',
@@ -297,6 +311,184 @@ __EO_TEXT__
         }
 
         return;
+    }
+}
+
+{
+    my $shortcut_file_path = '';
+    my $prev_sc_file_path  = '';
+
+    my @shortcut_array;
+    my $shortcut_index;
+
+    my $current_shortcut;
+    my $sc_file_status = 'No file selected';
+
+    sub show_shortcut_file_window {
+        my ($self) = @_;
+
+        my $sc_file_window = $self->_sc_file_window;
+
+        my $answer;
+        while ($answer = $sc_file_window->Show) {
+
+            last if $answer eq 'Cancel';
+
+            $self->_sc_select_file if $answer eq 'Select file';
+            $self->_next_candidate_line if $answer eq 'Next';
+            $self->_prev_candidate_line if $answer eq 'Prev';
+
+            $self->_open_shortcut, last if $answer eq 'Open shortcut' and $current_shortcut;
+        }
+
+        return;
+    }
+
+    sub _open_shortcut {
+        my ($self) = @_;
+        require Bio::Otter::Utils::AutoOpen; # load iff needed
+
+        my $opener = Bio::Otter::Utils::AutoOpen->new($self);
+        $opener->parse_path($current_shortcut);
+
+        $self->_next_candidate_line;
+        return;
+    }
+
+    sub _sc_select_file {
+        my ($self) = @_;
+
+        if (my $selected = $self->_sc_file_selector->Show) {
+            $shortcut_file_path = $selected;
+            $self->_load_shortcut_file;
+        }
+        return;
+    }
+
+    sub _load_shortcut_file {
+        my ($self) = @_;
+
+        return unless $shortcut_file_path and $shortcut_file_path ne $prev_sc_file_path;
+        $prev_sc_file_path = $shortcut_file_path;
+
+        $sc_file_status = "Using $shortcut_file_path";
+        $current_shortcut = '';
+
+        unless (tie @shortcut_array, 'Tie::File', $shortcut_file_path, mode => O_RDONLY) {
+            $sc_file_status = "Error opening file: $!";
+            return;
+        }
+
+        $shortcut_index = 0;
+        $self->_search_candidate_line(undef, 1);
+
+        return;
+    }
+
+    sub _next_candidate_line {
+        my ($self) = @_;
+        return $self->_search_candidate_line(1);
+    }
+
+    sub _prev_candidate_line {
+        my ($self) = @_;
+        return $self->_search_candidate_line(-1);
+    }
+
+    sub _search_candidate_line {
+        my ($self, $pre_inc, $inc) = @_;
+
+        $pre_inc //= 0;
+        $inc     //= $pre_inc;
+
+        my $prev_index = $shortcut_index;
+
+        $shortcut_index += $pre_inc if defined $shortcut_array[$shortcut_index];
+
+        while (defined(my $line = $shortcut_array[$shortcut_index])) {
+
+            $line =~ s/^\s+|\s+$//g; # trim whitespace from either end
+            next unless $line;       # skip empty
+            next if $line =~ /^#/;   # skip comment
+
+            $current_shortcut = $line;
+            $self->_update_status;
+            return;
+
+        } continue {
+            $shortcut_index += $inc;
+            $shortcut_index = 0, last if $shortcut_index < 0;
+        }
+
+        $shortcut_index = $prev_index;
+        $self->_update_status($inc > 0 ? 'LAST' : 'FIRST');
+
+        return;
+    }
+
+    sub _update_status {
+        my ($self, $comment) = @_;
+
+        my $where = sprintf 'line %3d', $shortcut_index + 1;
+        $where .= " - $comment" if $comment;
+
+        $sc_file_status = sprintf '%s, [%s]', $shortcut_file_path, $where;
+        return;
+    }
+
+    sub _sc_file_window {
+        my ($self) = @_;
+
+        my $sc_file_window = $self->{'_sc_file_window'};
+        return $sc_file_window if $sc_file_window;
+
+        $sc_file_window = $self->top_window->DialogBox(
+            -title          => 'Shortcut file',
+            -buttons        => [ 'Select file', 'Prev', 'Next', 'Open shortcut', 'Cancel' ],
+            -default_button => 'Open shortcut',
+            -cancel_button  => 'Cancel',
+            );
+
+        my $sc_file_choice = $sc_file_window->add(
+            'LabEntry',
+            -label        => 'File',
+            -labelPack    => [-side => 'left'],
+            -textvariable => \$shortcut_file_path,
+            -width        => 80,
+            )->pack;
+        $sc_file_choice->bind('<Return>', sub { $self->_load_shortcut_file });
+
+        my $sc_curr_shortcut = $sc_file_window->add(
+            'LabEntry',
+            -label        => 'Current shortcut',
+            -labelPack    => [-side => 'left'],
+            -textvariable => \$current_shortcut,
+            -width        => 80,
+            )->pack;
+
+        my $sc_status = $sc_file_window->add(
+            'LabEntry',
+            -label        => 'Status',
+            -labelPack    => [-side => 'left'],
+            -textvariable => \$sc_file_status,
+            -state        => 'disabled',
+            -width        => 80,
+            )->pack;
+
+        return $self->{'_sc_file_window'} = $sc_file_window;
+    }
+
+    sub _sc_file_selector {
+        my ($self) = @_;
+
+        my $sc_file_selector = $self->{'_sc_file_selector'};
+        return $sc_file_selector if $sc_file_selector;
+
+        my %fs_args;
+        $fs_args{file} = $shortcut_file_path if $shortcut_file_path;
+        $sc_file_selector = $self->top_window()->FileSelect(%fs_args);
+
+        return $self->{'_sc_file_selector'} = $sc_file_selector;
     }
 }
 
