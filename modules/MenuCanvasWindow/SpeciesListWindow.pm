@@ -9,6 +9,7 @@ use warnings;
 use Carp;
 use Bio::Otter::Log::Log4perl 'logger';
 use Fcntl 'O_RDONLY';
+use File::Basename;
 use Tie::File;
 use Try::Tiny;
 use Tk::DialogBox;
@@ -324,13 +325,13 @@ __EO_TEXT__
     my $current_shortcut;
     my $sc_file_status = 'No file selected';
 
+    my $default_button = 'Select file';
+
     sub show_shortcut_file_window {
         my ($self) = @_;
 
-        my $sc_file_window = $self->_sc_file_window;
-
         my $answer;
-        while ($answer = $sc_file_window->Show) {
+        while ($answer = $self->_sc_file_window->Show) {
 
             last if $answer eq 'Cancel';
 
@@ -378,6 +379,9 @@ __EO_TEXT__
             $sc_file_status = "Error opening file: $!";
             return;
         }
+
+        delete $self->{'_sc_file_window'}; # force dialog to be recreated
+        $default_button = 'Open shortcut';
 
         $shortcut_index = 0;
         $self->_search_candidate_line(undef, 1);
@@ -429,10 +433,10 @@ __EO_TEXT__
     sub _update_status {
         my ($self, $comment) = @_;
 
-        my $where = sprintf 'line %3d', $shortcut_index + 1;
+        my $where = sprintf 'line %d', $shortcut_index + 1;
         $where .= " - $comment" if $comment;
 
-        $sc_file_status = sprintf '%s, [%s]', $shortcut_file_path, $where;
+        $sc_file_status = sprintf '%s %s', basename($shortcut_file_path), $where;
         return;
     }
 
@@ -444,36 +448,38 @@ __EO_TEXT__
 
         $sc_file_window = $self->top_window->DialogBox(
             -title          => 'Shortcut file',
-            -buttons        => [ 'Select file', 'Prev', 'Next', 'Open shortcut', 'Cancel' ],
-            -default_button => 'Open shortcut',
+            -buttons        => [ 'Select file', 'Open shortcut', 'Prev', 'Next', 'Cancel' ],
+            -default_button => $default_button,
             -cancel_button  => 'Cancel',
+            );
+
+        my %label_config = (
+            -labelPack    => [-side => 'left'],
+            -width        => 80,
             );
 
         my $sc_file_choice = $sc_file_window->add(
             'LabEntry',
             -label        => 'File',
-            -labelPack    => [-side => 'left'],
             -textvariable => \$shortcut_file_path,
-            -width        => 80,
-            )->pack;
+            %label_config,
+            )->pack( -anchor => 'e' );
         $sc_file_choice->bind('<Return>', sub { $self->_load_shortcut_file });
 
         my $sc_curr_shortcut = $sc_file_window->add(
             'LabEntry',
             -label        => 'Current shortcut',
-            -labelPack    => [-side => 'left'],
             -textvariable => \$current_shortcut,
-            -width        => 80,
-            )->pack;
+            %label_config,
+            )->pack( -anchor => 'e' );
 
         my $sc_status = $sc_file_window->add(
             'LabEntry',
             -label        => 'Status',
-            -labelPack    => [-side => 'left'],
             -textvariable => \$sc_file_status,
             -state        => 'disabled',
-            -width        => 80,
-            )->pack;
+            %label_config,
+            )->pack( -anchor => 'e' );
 
         return $self->{'_sc_file_window'} = $sc_file_window;
     }
@@ -484,7 +490,7 @@ __EO_TEXT__
         my $sc_file_selector = $self->{'_sc_file_selector'};
         return $sc_file_selector if $sc_file_selector;
 
-        my %fs_args;
+        my %fs_args = ( -width => 30 );
         $fs_args{file} = $shortcut_file_path if $shortcut_file_path;
         $sc_file_selector = $self->top_window()->FileSelect(%fs_args);
 
