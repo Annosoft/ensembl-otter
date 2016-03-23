@@ -326,6 +326,7 @@ __EO_TEXT__
     my $sc_file_status = 'No file selected';
 
     my $default_button = 'Select file';
+    my $inhibit_select;
 
     sub show_shortcut_file_window {
         my ($self) = @_;
@@ -335,7 +336,11 @@ __EO_TEXT__
 
             last if $answer eq 'Cancel';
 
-            $self->_sc_select_file if $answer eq 'Select file';
+            if ($answer eq 'Select file') {
+                $self->_sc_select_file unless $inhibit_select;
+                $inhibit_select = undef;
+            }
+
             $self->_next_candidate_line if $answer eq 'Next';
             $self->_prev_candidate_line if $answer eq 'Prev';
 
@@ -464,7 +469,7 @@ __EO_TEXT__
             -textvariable => \$shortcut_file_path,
             %label_config,
             )->pack( -anchor => 'e' );
-        $sc_file_choice->bind('<Return>', sub { $self->_load_shortcut_file });
+        $sc_file_choice->bind('<Return>', sub { $self->_load_shortcut_file; $inhibit_select = 1 });
 
         my $sc_curr_shortcut = $sc_file_window->add(
             'LabEntry',
@@ -491,7 +496,7 @@ __EO_TEXT__
         return $sc_file_selector if $sc_file_selector;
 
         my %fs_args = ( -width => 30 );
-        $fs_args{file} = $shortcut_file_path if $shortcut_file_path;
+        $fs_args{ -initialfile } = $shortcut_file_path if $shortcut_file_path;
         $sc_file_selector = $self->top_window()->FileSelect(%fs_args);
 
         return $self->{'_sc_file_selector'} = $sc_file_selector;
