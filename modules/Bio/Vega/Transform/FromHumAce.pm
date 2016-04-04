@@ -311,6 +311,9 @@ sub store_Gene {
     my $gene_adaptor = $self->vega_dba->get_GeneAdaptor;
     $gene_adaptor->store_only($gene);
 
+    # We want get_all_Transcripts to load from database on next call.
+    delete $gene->{'_transcript_array'};
+
     $locus->ensembl_dbID($gene->dbID);
 
     $self->logger->debug("Stored gene for '", $locus->name, "', dbID: ", $gene->dbID);
@@ -326,6 +329,9 @@ sub update_Gene {
     $self->logger->logconfess("Cannot find gene for ", $self->_debug_hum_ace($old_locus)) unless $old_gene;
 
     my $old_transcripts = $old_gene->get_all_Transcripts;
+    $self->logger->debug("update_Gene: old locus ", $self->_debug_hum_ace($old_locus),
+                         " has transcript_ids: ", join ',', map { $_->dbID } @$old_transcripts );
+
     my $transcripts_copy = [ @$old_transcripts ];
 
     my $new_gene = $self->_gene_from_Locus($new_locus, $old_transcripts); # transcripts for setting coords
@@ -347,6 +353,10 @@ sub update_Gene {
     $sth->finish;
 
     $gene_adaptor->remove($old_gene);
+
+    # We want get_all_Transcripts to load from database on next call. Do both old and new in case of caching.
+    delete $old_gene->{'_transcript_array'};
+    delete $new_gene->{'_transcript_array'};
 
     $new_locus->ensembl_dbID($new_gene_dbID);
 

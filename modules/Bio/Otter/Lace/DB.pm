@@ -139,6 +139,7 @@ sub _dba {
         -dbname  => $self->file,
         -species => $db_species,
         -reconnect_when_connection_lost => 1, # to cope with Registry->clear disconnecting everything
+        -no_cache => 1,                       # for sanity in FromHumAce
         );
 }
 
