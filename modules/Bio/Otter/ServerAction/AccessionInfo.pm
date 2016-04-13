@@ -26,7 +26,19 @@ sub get_accession_info {
 
     my $acc_list = $self->deserialise_id_list($self->server->require_argument('accessions'));
 
-    my( $info );
+    # Separate out any accessions that look like they come from the Sequence Read Archive (SRA) at ENA.
+    my @sra_accessions;
+    for (my $i = 0; $i < @$acc_list;) {
+        my $acc = $acc_list->[$i];
+        if (evidence_is_sra_sample_accession($acc)) {
+            push @sra_accessions, splice(@$acc_list, $i, 1);
+        }
+        else {
+            $i++;
+        }
+    }
+
+    my ($info);
     try {
         my $ai = Bio::Otter::Utils::AccessionInfo->new;
         $info = $ai->get_accession_info($acc_list);
@@ -35,6 +47,22 @@ sub get_accession_info {
     catch {
         die "Failed to fetch AccessionInfo accession type info: $_";
     };
+
+    if (@sra_accessions) {
+        my ($ena_types);
+        try {
+            my $ena = Bio::Otter::Utils::ENA->new;
+            $ena_types = $ena->get_sample_accession_types(@sra_accessions);
+            1;
+        }
+        catch {
+            die "Failed to fetch ENA accession type info: $_";
+        };
+
+        while (my ($name, $data) = each %$ena_types) {
+            $info->{$name} = $data;
+        }
+    }
 
     return $info;
 }
