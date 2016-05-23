@@ -869,7 +869,10 @@ sub reload_filter_state {
     $col_aptr->fetch_ColumnCollection_state($self->ColumnCollection);
 
     foreach my $column ( $self->ColumnCollection->list_Columns_with_internal_type('always_on') ) {
-        $column->selected(1) if ($column->status eq 'Error' and not $column->selected);
+        my $status = $column->status;
+        if ($status eq 'Error' or $status eq 'Empty') {
+            $column->selected(1, { force => 1});
+        }
     }
 
     return;
