@@ -253,6 +253,7 @@ sub check_transcript_stable_ids {
     foreach my $g ( $self->genes ) {
         foreach my $t ( @{$g->get_all_Transcripts} ) {
             my $stable_id = $t->stable_id;
+            next unless $stable_id;
             my $dbID      = $t->dbID;
             if (my $prev_t = $stable_id_map{$stable_id}) {
                 my $prev_dbID = $prev_t->dbID;
